@@ -1,2 +1,1 @@
-$ python -m pip install -r requirements.txt
-#better to have 16Go RAM
+playwright=1.55.0
