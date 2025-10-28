@@ -4,7 +4,8 @@ import sys
 
 from config import (ASNR_RADIATION_BASE_URL, 
                     METEOFRANCE_WEATHER_DOWNLOAD_URL, 
-                    VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL
+                    VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL,
+                    TIMEOUT
 )
 
 def test():
@@ -44,7 +45,7 @@ def _safe_playwright_action(description, action):
     except Exception as e:
         print(f"⚠️ Erreur lors de {description} : {e}")
 
-
+# à supprimer si on utilise _close_element
 def _refuse_cookies_if_present(page):
     """Ferme le bandeau cookies s’il est affiché."""
     def action():
@@ -53,10 +54,27 @@ def _refuse_cookies_if_present(page):
         bouton.click()
     _safe_playwright_action("Refus des cookies", action)
 
-def _close_modal_if_present(page):
+# à supprimer si on utilise _close_element
+def _close_modal_if_present(page, modal_name):
     """Ferme la modale de fusion ASN/IRSN si elle apparaît."""
     def action():
         page.wait_for_selector("div.modal-content", timeout=5000)
         bouton_fermer = page.locator("div.modal-content span.close")
         bouton_fermer.click()
     _safe_playwright_action("Fermeture de la modale 'Fusion ASN/IRSN'", action)
+
+def _close_element(page, selector, button_selector, description):
+    """Ferme un élément (bandeau, modale, etc.) s'il est présent sur la page.
+
+    Args:
+        page: L'objet Playwright Page.
+        selector: Le sélecteur CSS de l'élément à fermer.
+        button_selector: Le sélecteur CSS du bouton de fermeture à l'intérieur de l'élément.
+        description: Description textuelle de l'élément pour les logs.
+    """
+
+    def action():
+        page.wait_for_selector(selector, timeout=TIMEOUT)
+        bouton_fermer = page.locator(button_selector)
+        bouton_fermer.click()
+    _safe_playwright_action(f"Fermeture de l'élément '{description}'", action)
