@@ -2,6 +2,8 @@
 import subprocess
 import sys
 from playwright.sync_api import sync_playwright, TimeoutError
+import zipfile
+import os
 
 from config import (ASNR_RADIATION_URL, 
                     METEOFRANCE_WEATHER_DOWNLOAD_URL, 
@@ -81,13 +83,13 @@ def _select_dropdown_option(page, container_selector, button_selector, option_li
     def action():
         # Localiser le conteneur du menu
         container = page.locator(container_selector)
-        container.wait_for(state="visible", timeout=10000)
+        container.wait_for(state="visible", timeout=2*TIMEOUT)
 
         # Localiser et interagir avec le bouton déroulant
         button = container.locator(button_selector)
         button.click()
         options_list = container.locator(option_list_selector)
-        options_list.wait_for(state="visible", timeout=10000)
+        options_list.wait_for(state="visible", timeout=2*TIMEOUT)
         option = options_list.locator(f"li:has-text('{option_text}')")
         option.click()
 
@@ -108,7 +110,7 @@ def _fill_field(page, container_selector, field_selector, value, description):
     def action():
         # Localiser le conteneur
         container = page.locator(container_selector)
-        container.wait_for(state="visible", timeout=10000)
+        container.wait_for(state="visible", timeout=2*TIMEOUT)
 
         # Localiser et interagir avec le champ
         field = container.locator(field_selector)        
@@ -119,6 +121,65 @@ def _fill_field(page, container_selector, field_selector, value, description):
         field.press("Escape")  # Valider (si nécessaire)
 
     _safe_playwright_action(description, action)
+
+def _extract_zip(zip_path, extract_to_dir, new_csv_name):
+    """
+    Extrait un fichier ZIP contenant un seul CSV, renomme le CSV extrait et supprime le ZIP.
+
+    Args:
+        zip_path (str): Chemin du fichier ZIP à extraire.
+        extract_to_dir (str): Répertoire de destination.
+        new_csv_name (str): Nouveau nom du fichier CSV final.
+    """
+    # Identifier le fichier CSV dans le ZIP et l'extraire
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        csv_files = [name for name in zip_ref.namelist() if name.lower().endswith(".csv")]
+    
+        if not csv_files:
+            raise FileNotFoundError("⚠️ Aucun fichier CSV trouvé dans le ZIP.")
+        if len(csv_files) > 1:
+            raise ValueError(f"⚠️ Plusieurs fichiers CSV trouvés dans le ZIP : {csv_files}")
+        
+        csv_file_in_zip = csv_files[0]
+
+        extracted_csv_path = os.path.join(extract_to_dir, csv_file_in_zip)
+
+    # Construire le chemin et renommer le fichier CSV
+    new_csv_path = os.path.join(extract_to_dir, new_csv_name)
+    os.rename(extracted_csv_path, new_csv_path)
+    
+    # Supprimer le fichier ZIP
+    os.remove(zip_path)
+
+
+def _download_ASNR_data(page, button_selector, description):
+
+    def action():
+        # Localiser et cliquer sur le bouton de téléchargement
+        page.wait_for_selector(button_selector, timeout=2*TIMEOUT)
+        with page.expect_download() as download_info:
+            page.locator(button_selector).click()
+        download = download_info.value
+
+        # Chemin pour sauvegarder le fichier téléchargé
+        download_path = os.path.join("data", "raw", download.suggested_filename)
+        
+        # Sauvegarder le fichier ZIP téléchargé
+        download.save_as(download_path)
+        
+        # Extraire et renommer le CSV, supprimer le ZIP
+        new_csv_name = "data_ASNR_sol_2024.csv"
+        extract_to_dir = os.path.join("data", "raw")
+        _extract_zip(download_path, extract_to_dir, new_csv_name)
+
+    _safe_playwright_action(description, action)
+
+
+
+
+
+
+
 
 
 def get_data_ASNR():
@@ -140,23 +201,20 @@ def get_data_ASNR():
                                 ".selectric .button",
                                 ".selectricItems",
                                 "Sol",
-                                "Sélection du milieu de collecte 'Sol'"
-                                )
+                                "Sélection du milieu de collecte 'Sol'")
 
         # 3. Choisir la date de début de la sélection
         _fill_field(page,
                     "div.row.container-select:has(div.label-select:has-text('Date de début'))",
                     "input.form-control",
                     "01-janvier-2024",
-                    "Saisie de la date de début de la sélection"
-                    )
+                    "Saisie de la date de début de la sélection")
         # 4. Choisir la date de fin de la sélection
         _fill_field(page,
                     "div.row.container-select:has(div.label-select:has-text('Date de fin'))",
                     "input.form-control",
                     "01-janvier-2025",
-                    "Saisie de la date de fin de la sélection"
-                    )
+                    "Saisie de la date de fin de la sélection")
 
         # 5. Refuser les cookies si la bannière est présente
         _click_on_element(page, 
@@ -168,18 +226,18 @@ def get_data_ASNR():
         _click_on_element(page,
                           "div.row.container-select:has(button[ng-click='showResult()'])",
                           "button.btn.little-margin.middle-size.color-purple[ng-click='showResult()']",
-                          "Clic sur 'Afficher les résultats'"
-                          )
+                          "Clic sur 'Afficher les résultats'")
         
         # 7. Cliquer sur l'onglet "Téléchargement"
         _click_on_element(page,
                           "ul li:has-text('Téléchargement')",
                           "li[ng-click='showDownloadTree()']",
-                          "Clic sur l'onglet 'Téléchargement'"
-                          )
+                          "Clic sur l'onglet 'Téléchargement'")
         
         # 8. Cliquer sur le bouton de téléchargement des données au format CSV
-
+        _download_ASNR_data(page, 
+                            "button[ng-click='downloadTree()']", 
+                            "Téléchargement des données ASNR au format CSV")
 
         # fin de fonction
 
