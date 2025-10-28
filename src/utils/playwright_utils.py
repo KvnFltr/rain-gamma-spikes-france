@@ -4,6 +4,12 @@ from config import TIMEOUT
 import zipfile
 import os
 
+##################################
+
+# Fonctions génériques Playwright 
+ 
+##################################
+
 def test_from_playwright_utils():
     print("hello from playwright_utils")
 
@@ -41,7 +47,7 @@ def _safe_playwright_action(description, action):
         print(f"⚠️ Erreur lors de {description} : {e}")
 
 
-def click_on_element(page, container_selector, button_selector, description):
+def _click_on_element(page, container_selector, button_selector, description):
     """
     Clique sur un élément identifié par un sélecteur.
 
@@ -58,7 +64,7 @@ def click_on_element(page, container_selector, button_selector, description):
     _safe_playwright_action(description, action)
 
 
-def select_dropdown_option(page, container_selector, button_selector, option_list_selector, option_text, description):
+def _select_dropdown_option(page, container_selector, button_selector, option_list_selector, option_text, description):
     """
     Sélectionne une option dans un menu déroulant identifié par son conteneur.
 
@@ -86,7 +92,7 @@ def select_dropdown_option(page, container_selector, button_selector, option_lis
     _safe_playwright_action(description, action)
 
 
-def fill_field(page, container_selector, field_selector, value, description):
+def _fill_field(page, container_selector, field_selector, value, description):
     """
     Remplit un champ de formulaire avec une valeur donnée.
 
@@ -142,8 +148,7 @@ def _extract_zip(zip_path, extract_to_dir, new_csv_name):
     # Supprimer le fichier ZIP
     os.remove(zip_path)
 
-
-def download_ASNR_data(page, button_selector, description):
+def _click_on_download(page, button_selector, csv_name, description):
 
     def action():
         # Localiser et cliquer sur le bouton de téléchargement
@@ -159,8 +164,81 @@ def download_ASNR_data(page, button_selector, description):
         download.save_as(download_path)
         
         # Extraire et renommer le CSV, supprimer le ZIP
-        new_csv_name = "data_ASNR_sol_2024.csv"
+        new_csv_name = csv_name#"data_ASNR_sol_2024.csv"
         extract_to_dir = os.path.join("data", "raw")
         _extract_zip(download_path, extract_to_dir, new_csv_name)
 
     _safe_playwright_action(description, action)
+
+##############################
+
+# Fonctions métier Playwright
+ 
+##############################
+
+def close_modal(page):
+    _click_on_element(page, 
+                     "div.modal-content", 
+                     "div.modal-content span.close", 
+                     "Fermeture de la modale informative")
+
+def select_collection_environment(page, environment_text):
+    _select_dropdown_option(
+        page,
+        "div.row.container-select:has(div.label-select:has-text('Milieu de collecte'))",
+        ".selectric .button",
+        ".selectricItems",
+        environment_text,
+        f"Sélection du milieu de collecte '{environment_text}'"
+    )
+
+def fill_start_date(page, date):
+    _fill_field(
+        page,
+        "div.row.container-select:has(div.label-select:has-text('Date de début'))",
+        "input.form-control",
+        date,
+        "Saisie de la date de début de la sélection"
+    )
+
+def fill_end_date(page, date):
+    _fill_field(
+        page,
+        "div.row.container-select:has(div.label-select:has-text('Date de fin'))",
+        "input.form-control",
+        date,
+        "Saisie de la date de fin de la sélection"
+    )
+
+def refuse_cookies(page):
+    _click_on_element(
+        page, 
+        "#tarteaucitronAlertBig",
+        "#tarteaucitronAllDenied2",
+        "Refus des cookies"
+    )
+    
+def click_show_results(page):
+    _click_on_element(
+        page,
+        "div.row.container-select:has(button[ng-click='showResult()'])",
+        "button.btn.little-margin.middle-size.color-purple[ng-click='showResult()']",
+        "Clic sur 'Afficher les résultats'"
+    )
+
+
+def click_download_tab(page):
+    _click_on_element(
+        page,
+        "ul li:has-text('Téléchargement')",
+        "li[ng-click='showDownloadTree()']",
+        "Clic sur l'onglet 'Téléchargement'"
+    )
+
+def start_downloading_data_playwright(page, csv_name):
+    _click_on_download(
+        page,
+        "button[ng-click='downloadTree()']",
+        csv_name,
+        "Téléchargement des données ASNR au format CSV"
+    )
