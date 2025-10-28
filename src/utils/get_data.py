@@ -32,3 +32,15 @@ def install_playwright_browsers():
     except subprocess.CalledProcessError as e:
         print(f"Erreur lors de l'installation des navigateurs : {e}")
         sys.exit(1)
+
+def safe_action(description, action):
+    """Exécute une action Playwright en la journalisant et en gérant les erreurs."""
+    print(f"\n➡️ {description}...")
+    try:
+        action()
+        print(f"✅ {description} réussie.")
+    except TimeoutError:
+        print(f"⚠️ Timeout lors de : {description}")
+    except Exception as e:
+        print(f"⚠️ Erreur lors de {description} : {e}")
+
