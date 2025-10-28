@@ -13,6 +13,7 @@ def test():
     print(METEOFRANCE_WEATHER_DOWNLOAD_URL)
     print(VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL)
 
+
 def install_playwright_browsers():
     """
     Installe les navigateurs requis par Playwright.
@@ -34,6 +35,7 @@ def install_playwright_browsers():
         print(f"Erreur lors de l'installation des navigateurs : {e}")
         sys.exit(1)
 
+
 def _safe_playwright_action(description, action):
     """Exécute une action Playwright en la journalisant et en gérant les erreurs."""
     print(f"\n➡️ {description}...")
@@ -45,36 +47,48 @@ def _safe_playwright_action(description, action):
     except Exception as e:
         print(f"⚠️ Erreur lors de {description} : {e}")
 
-# à supprimer si on utilise _close_element
-def _refuse_cookies_if_present(page):
-    """Ferme le bandeau cookies s’il est affiché."""
-    def action():
-        page.wait_for_selector("#tarteaucitronAlertBig", timeout=5000)
-        bouton = page.locator("#tarteaucitronAllDenied2")
-        bouton.click()
-    _safe_playwright_action("Refus des cookies", action)
 
-# à supprimer si on utilise _close_element
-def _close_modal_if_present(page, modal_name):
-    """Ferme la modale de fusion ASN/IRSN si elle apparaît."""
-    def action():
-        page.wait_for_selector("div.modal-content", timeout=5000)
-        bouton_fermer = page.locator("div.modal-content span.close")
-        bouton_fermer.click()
-    _safe_playwright_action("Fermeture de la modale 'Fusion ASN/IRSN'", action)
-
-def _close_element(page, selector, button_selector, description):
-    """Ferme un élément (bandeau, modale, etc.) s'il est présent sur la page.
+def _click_on_element(page, selector, button_selector, description):
+    """
+    Clique sur un élément identifié par un sélecteur.
 
     Args:
         page: L'objet Playwright Page.
-        selector: Le sélecteur CSS de l'élément à fermer.
-        button_selector: Le sélecteur CSS du bouton de fermeture à l'intérieur de l'élément.
-        description: Description textuelle de l'élément pour les logs.
+        selector: Le sélecteur CSS de l'élément à attendre.
+        button_selector: Le sélecteur CSS du bouton à cliquer.
+        description: Description textuelle de l'action pour les logs.
     """
 
     def action():
         page.wait_for_selector(selector, timeout=TIMEOUT)
-        bouton_fermer = page.locator(button_selector)
-        bouton_fermer.click()
-    _safe_playwright_action(f"Fermeture de l'élément '{description}'", action)
+        button = page.locator(button_selector)
+        button.click()
+    _safe_playwright_action(description, action)
+
+
+
+def _fill_field(page, container_selector, field_selector, value, description):
+    """
+    Remplit un champ de formulaire avec une valeur donnée.
+
+    Args:
+        page: L'objet Playwright Page.
+        container_selector: Sélecteur CSS du conteneur du champ.
+        field_selector: Sélecteur CSS du champ à remplir.
+        value: Valeur à entrer dans le champ.
+        description: Description textuelle de l'action pour les logs.
+    """
+    def action():
+        # Localiser le conteneur
+        container = page.locator(container_selector)
+        container.wait_for(state="visible", timeout=10000)
+
+        # Localiser et interagir avec le champ
+        field = container.locator(field_selector)        
+        field.click()
+        page.wait_for_timeout(TIMEOUT)  # Attendre un court délai si nécessaire
+        field.fill("")  # Effacer le contenu existant
+        field.fill(value)  # Remplir avec la nouvelle valeur
+        field.press("Escape")  # Valider (si nécessaire)
+
+    _safe_playwright_action(description, action)
