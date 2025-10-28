@@ -1,6 +1,7 @@
 
 import subprocess
 import sys
+from playwright.sync_api import sync_playwright, TimeoutError
 
 from config import (ASNR_RADIATION_BASE_URL, 
                     METEOFRANCE_WEATHER_DOWNLOAD_URL, 
@@ -92,3 +93,71 @@ def _fill_field(page, container_selector, field_selector, value, description):
         field.press("Escape")  # Valider (si nécessaire)
 
     _safe_playwright_action(description, action)
+
+
+def _select_dropdown_option(page, container_selector, button_selector, option_list_selector, option_text, description):
+    """
+    Sélectionne une option dans un menu déroulant identifié par son conteneur.
+
+    Args:
+        page: L'objet Playwright Page.
+        container_selector: Sélecteur CSS du conteneur parent (contenant le menu).
+        button_selector: Sélecteur CSS du bouton de menu déroulant à cliquer.
+        option_list_selector: Sélecteur CSS de la liste d’options (qui apparaît après clic).
+        option_text: Texte exact de l’option à sélectionner.
+        description: Description textuelle pour les logs.
+    """
+    def action():
+        # Localiser le conteneur du menu
+        container = page.locator(container_selector)
+        container.wait_for(state="visible", timeout=10000)
+
+        # Localiser et interagir avec le bouton déroulant
+        button = container.locator(button_selector)
+        button.click()
+        options_list = container.locator(option_list_selector)
+        options_list.wait_for(state="visible", timeout=10000)
+        option = options_list.locator(f"li:has-text('{option_text}')")
+        option.click()
+
+    _safe_playwright_action(description, action)
+
+
+
+
+
+
+
+
+
+
+def get_data_ASNR():
+    """Télécharge les données de l'ANSR en interagissant avec la page web."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        page = browser.new_page()
+        page.goto("https://mesure-radioactivite.fr/#/expert", wait_until="domcontentloaded", timeout=60000)
+
+        # 1. Fermer la modale informative si elle est présente
+        _click_on_element(page, 
+                          "div.modal-content", 
+                          "div.modal-content span.close", 
+                          "Fermeture de la modale informative")
+        
+        # 2. Sélectionner le menu déroulant "Milieu de collecte" et choisir "Sol"
+
+        # 3. Choisir la date de début de la sélection
+
+        # 4. Choisir la date de fin de la sélection
+
+        # 5. Refuser les cookies si la bannière est présente
+        _click_on_element(page, 
+                          "#tarteaucitronAlertBig",
+                          "#tarteaucitronAllDenied2",
+                          "Refus des cookies")
+
+        # 6. Cliquer sur "Afficher les résultats"
+
+        # 7. Cliquer sur l'onglet "Téléchargement"
+
+        # 8. Cliquer sur le bouton de téléchargement des données au format CSV
