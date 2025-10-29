@@ -1,8 +1,9 @@
 import sys
 import subprocess
-from config import TIMEOUT
+from config import *
 import zipfile
 import os
+
 
 ##################################
 
@@ -180,17 +181,19 @@ def _click_on_download(page, button_selector, csv_name, description):
 ##############################
 
 def close_modal(page):
-    _click_on_element(page, 
-                     "div.modal-content", 
-                     "div.modal-content span.close", 
-                     "Fermeture de la modale informative")
+    _click_on_element(
+        page, 
+        SELECTORS["modal"]["container"], 
+        SELECTORS["modal"]["button"], 
+        "Fermeture de la modale informative"
+    )
 
 def select_collection_environment(page, environment_text):
     _select_dropdown_option(
         page,
-        "div.row.container-select:has(div.label-select:has-text('Milieu de collecte'))",
-        ".selectric .button",
-        ".selectricItems",
+        SELECTORS["collection_environment"]["container"],
+        SELECTORS["collection_environment"]["button"],
+        SELECTORS["collection_environment"]["options"],
         environment_text,
         f"Sélection du milieu de collecte '{environment_text}'"
     )
@@ -198,8 +201,8 @@ def select_collection_environment(page, environment_text):
 def fill_start_date(page, date):
     _fill_field(
         page,
-        "div.row.container-select:has(div.label-select:has-text('Date de début'))",
-        "input.form-control",
+        SELECTORS["dates"]["start"]["container"],
+        SELECTORS["dates"]["start"]["input"],
         date,
         "Saisie de la date de début de la sélection"
     )
@@ -207,25 +210,25 @@ def fill_start_date(page, date):
 def fill_end_date(page, date):
     _fill_field(
         page,
-        "div.row.container-select:has(div.label-select:has-text('Date de fin'))",
-        "input.form-control",
+        SELECTORS["dates"]["end"]["container"],
+        SELECTORS["dates"]["end"]["input"],
         date,
         "Saisie de la date de fin de la sélection"
     )
 
 def refuse_cookies(page):
     _click_on_element(
-        page, 
-        "#tarteaucitronAlertBig",
-        "#tarteaucitronAllDenied2",
+        page,
+        SELECTORS["cookies"]["banner"],
+        SELECTORS["cookies"]["refuse"],
         "Refus des cookies"
     )
     
 def click_show_results(page):
     _click_on_element(
         page,
-        "div.row.container-select:has(button[ng-click='showResult()'])",
-        "button.btn.little-margin.middle-size.color-purple[ng-click='showResult()']",
+        SELECTORS["results"]["container"],
+        SELECTORS["results"]["button"],
         "Clic sur 'Afficher les résultats'"
     )
 
@@ -233,15 +236,15 @@ def click_show_results(page):
 def click_download_tab(page):
     _click_on_element(
         page,
-        "ul li:has-text('Téléchargement')",
-        "li[ng-click='showDownloadTree()']",
+        SELECTORS["download"]["tab"]["container"],
+        SELECTORS["download"]["tab"]["button"],
         "Clic sur l'onglet 'Téléchargement'"
     )
 
 def start_downloading_data_playwright(page, csv_name):
     _click_on_download(
         page,
-        "button[ng-click='downloadTree()']",
+        SELECTORS["download"]["download_button"],
         csv_name,
         "Téléchargement des données ASNR au format CSV"
     )
