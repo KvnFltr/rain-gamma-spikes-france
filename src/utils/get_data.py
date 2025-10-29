@@ -1,5 +1,5 @@
 from playwright.sync_api import sync_playwright, TimeoutError
-from config import ASNR_RADIATION_URL, METEOFRANCE_WEATHER_DOWNLOAD_URL, VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL
+from config import *
 from src.utils.playwright_utils import *
 
 
@@ -11,7 +11,7 @@ def test():
 
 
 
-def get_data_ASNR():
+def get_radiation_data():
     """Télécharge les données de l'ANSR en interagissant avec la page web."""
 
     # Installer les navigateurs requis par Playwright
@@ -20,33 +20,25 @@ def get_data_ASNR():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
-        page.goto(ASNR_RADIATION_URL, wait_until="domcontentloaded", timeout=60000)
+        page.goto(ASNR_RADIATION_URL, wait_until="domcontentloaded", timeout=INITIAL_TIMEOUT)
 
-        # utiliser une fonction ici qui encaplsule toutes les étapes de téléchargement pour le premier dataset (sol)
-        
-        # 1. Fermer la modale informative si elle est présente
-        close_modal(page)
-        
-        # 2. Sélectionner le menu déroulant "Milieu de collecte" et choisir "Sol"
-        select_collection_environment(page, "Sol")
-
-        # 3. Choisir la date de début de la sélection
-        fill_start_date(page, "01-janvier-2024")
-
-        # 4. Choisir la date de fin de la sélection
-        fill_end_date(page, "01-janvier-2025")
-
-        # 5. Refuser les cookies si la bannière est présente
-        refuse_cookies(page)
-
-        # 6. Cliquer sur "Afficher les résultats"
-        click_show_results(page)
-        
-        # 7. Cliquer sur l'onglet "Téléchargement"
-        click_download_tab(page)
-        
-        # 8. Cliquer sur le bouton de téléchargement des données au format CSV
-        start_downloading_data_playwright(page, "asnr_soil_data_2024.csv")
-
+        # Téléchargement des données de radiation du sol 
+        get_soil_radiation_data(page)
         # généraliser pour d'autres types de données plus tard... (eau, air, etc.)
+        
+        # Fermer le navigateur
+        browser.close()
 
+
+def get_soil_radiation_data(page):
+    
+    close_modal(page)                          # 1. Fermer la modale informative si elle est présente
+    select_collection_environment(page, "Sol") # 2. Sélectionner le menu déroulant "Milieu de collecte" et choisir "Sol"
+    fill_start_date(page, "01-janvier-2024")   # 3. Choisir la date de début de la sélection
+    fill_end_date(page, "01-janvier-2025")     # 4. Choisir la date de fin de la sélection
+    refuse_cookies(page)                       # 5. Refuser les cookies si la bannière est présente
+    click_show_results(page)                   # 6. Cliquer sur "Afficher les résultats"
+    click_download_tab(page)                   # 7. Cliquer sur l'onglet "Téléchargement"
+    
+    # 8. Cliquer sur le bouton de téléchargement des données au format CSV
+    start_downloading_data_playwright(page, "asnr_soil_radiation_data_2024.csv")

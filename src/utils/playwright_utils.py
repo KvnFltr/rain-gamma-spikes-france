@@ -111,7 +111,7 @@ def _fill_field(page, container_selector, field_selector, value, description):
         # Localiser et interagir avec le champ
         field = container.locator(field_selector)        
         field.click()
-        page.wait_for_timeout(TIMEOUT)  # Attendre un court délai si nécessaire
+        #page.wait_for_timeout(50)
         field.fill("")  # Effacer le contenu existant
         field.fill(value)  # Remplir avec la nouvelle valeur
         field.press("Escape")  # Valider (si nécessaire)
@@ -128,23 +128,26 @@ def _extract_zip(zip_path, extract_to_dir, new_csv_name):
         extract_to_dir (str): Répertoire de destination.
         new_csv_name (str): Nouveau nom du fichier CSV final.
     """
-    # Identifier le fichier CSV dans le ZIP et l'extraire
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         csv_files = [name for name in zip_ref.namelist() if name.lower().endswith(".csv")]
-    
+
         if not csv_files:
             raise FileNotFoundError("⚠️ Aucun fichier CSV trouvé dans le ZIP.")
         if len(csv_files) > 1:
             raise ValueError(f"⚠️ Plusieurs fichiers CSV trouvés dans le ZIP : {csv_files}")
-        
+
         csv_file_in_zip = csv_files[0]
 
-        extracted_csv_path = os.path.join(extract_to_dir, csv_file_in_zip)
+        # Extraire le CSV dans le dossier de destination
+        zip_ref.extract(csv_file_in_zip, path=extract_to_dir)
 
-    # Construire le chemin et renommer le fichier CSV
+    # Construire les chemins complets
+    extracted_csv_path = os.path.join(extract_to_dir, csv_file_in_zip)
     new_csv_path = os.path.join(extract_to_dir, new_csv_name)
+
+    # Renommer le fichier CSV extrait
     os.rename(extracted_csv_path, new_csv_path)
-    
+
     # Supprimer le fichier ZIP
     os.remove(zip_path)
 
@@ -164,7 +167,7 @@ def _click_on_download(page, button_selector, csv_name, description):
         download.save_as(download_path)
         
         # Extraire et renommer le CSV, supprimer le ZIP
-        new_csv_name = csv_name#"data_ASNR_sol_2024.csv"
+        new_csv_name = csv_name
         extract_to_dir = os.path.join("data", "raw")
         _extract_zip(download_path, extract_to_dir, new_csv_name)
 
