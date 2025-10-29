@@ -3,7 +3,7 @@ import subprocess
 from config import *
 import zipfile
 import os
-
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 ##################################
 
@@ -24,7 +24,7 @@ def install_playwright_browsers():
         # Vérifie que Playwright est installé (sinon, l'utilisateur doit d'abord installer les dépendances)
         print("Installation des navigateurs pour Playwright...")
         subprocess.run(["playwright", "install"], check=True)
-        print("Navigateurs installés avec succès.")
+        print("✅ Navigateurs installés avec succès.")
     except ImportError:
         print(
             "Erreur : Playwright n'est pas installé. "
@@ -38,7 +38,7 @@ def install_playwright_browsers():
 
 def _safe_playwright_action(description, action):
     """Exécute une action Playwright en la journalisant et en gérant les erreurs."""
-    print(f"\n➡️ {description}...")
+    print(f"\n{description}...")
     try:
         action()
         print(f"✅ {description} réussie.")
@@ -64,6 +64,23 @@ def _click_on_element(page, container_selector, button_selector, description):
         button.click()
     _safe_playwright_action(description, action)
 
+def _check_if_element_visible(page, selector, timeout):
+    """
+    Vérifie si un élément est visible sur la page.
+
+    Args:
+        page: L'objet Playwright Page.
+        selector: Le sélecteur CSS de l'élément.
+        timeout: Temps maximum d'attente en millisecondes.
+
+    Returns:
+        bool: True si l'élément est visible, False sinon.
+    """
+    try:
+        page.wait_for_selector(selector, state="visible", timeout=timeout)
+        return True
+    except PlaywrightTimeoutError:
+        return False
 
 def _select_dropdown_option(page, container_selector, button_selector, option_list_selector, option_text, description):
     """
@@ -80,13 +97,13 @@ def _select_dropdown_option(page, container_selector, button_selector, option_li
     def action():
         # Localiser le conteneur du menu
         container = page.locator(container_selector)
-        container.wait_for(state="visible", timeout=2*TIMEOUT)
+        container.wait_for(state="visible", timeout=TIMEOUT)
 
         # Localiser et interagir avec le bouton déroulant
         button = container.locator(button_selector)
         button.click()
         options_list = container.locator(option_list_selector)
-        options_list.wait_for(state="visible", timeout=2*TIMEOUT)
+        options_list.wait_for(state="visible", timeout=TIMEOUT)
         option = options_list.locator(f"li:has-text('{option_text}')")
         option.click()
 
@@ -107,12 +124,11 @@ def _fill_field(page, container_selector, field_selector, value, description):
     def action():
         # Localiser le conteneur
         container = page.locator(container_selector)
-        container.wait_for(state="visible", timeout=2*TIMEOUT)
+        container.wait_for(state="visible", timeout=TIMEOUT)
 
         # Localiser et interagir avec le champ
         field = container.locator(field_selector)        
         field.click()
-        #page.wait_for_timeout(50)
         field.fill("")  # Effacer le contenu existant
         field.fill(value)  # Remplir avec la nouvelle valeur
         field.press("Escape")  # Valider (si nécessaire)
@@ -156,7 +172,7 @@ def _click_on_download(page, button_selector, csv_name, description):
 
     def action():
         # Localiser et cliquer sur le bouton de téléchargement
-        page.wait_for_selector(button_selector, timeout=2*TIMEOUT)
+        page.wait_for_selector(button_selector, timeout=TIMEOUT)
         with page.expect_download() as download_info:
             page.locator(button_selector).click()
         download = download_info.value
@@ -217,12 +233,15 @@ def fill_end_date(page, date):
     )
 
 def refuse_cookies(page):
-    _click_on_element(
-        page,
-        SELECTORS["cookies"]["banner"],
-        SELECTORS["cookies"]["refuse"],
-        "Refus des cookies"
-    )
+    if _check_if_element_visible(page, SELECTORS["cookies"]["banner"], TIMEOUT_REFUSE_COOKIES):
+        _click_on_element(
+            page,
+            SELECTORS["cookies"]["banner"],
+            SELECTORS["cookies"]["refuse"],
+            "Refus des cookies"
+        )
+    else:
+        print("ℹ️ Bannière de cookies absente/déjà fermée.")
     
 def click_show_results(page):
     _click_on_element(
@@ -246,5 +265,5 @@ def start_downloading_data_playwright(page, csv_name):
         page,
         SELECTORS["download"]["download_button"],
         csv_name,
-        "Téléchargement des données ASNR au format CSV"
+        f"⏳ Téléchargement des données au format CSV..."
     )
