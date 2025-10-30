@@ -6,6 +6,13 @@ VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL = "https://www.data.gouv.fr/api/1/datasets
 DATA_RAW_DIR = "data/raw"
 DATA_CLEANED_DIR = "data/cleaned"
 
+WEATHER_DATA_FILENAME = "meteofrance_weather_data.csv.gz"
+MUNICIPALITY_DATA_FILENAME = "villedereve_municipality_data.csv"
+
+RADIATION_DATA_FILENAME_PATTERN = "asnr_*_radiation_data_*.csv"
+def get_radiation_data_filename(medium_name: str, start_date: str, end_date: str) -> str:
+    return f"asnr_{medium_name}_radiation_data_{start_date}_to_{end_date}.csv"
+
 TIMEOUT = 10000 # Timeout en millisecondes pour les actions Playwright
 INITIAL_TIMEOUT = 60000 # Timeout initial pour le lancement du navigateur et le chargement de la page
 TIMEOUT_REFUSE_COOKIES = 100 # Timeout spécifique pour la bannière de cookies
@@ -125,4 +132,12 @@ CLEAN_MUNICIPALITY_DATA_CONFIG = {
         "fallback": "longitude_mairie",
         "cleaned": "longitude"
     }
+}
+
+WEATHER_DATA_CONFIG = {
+    "required_columns": ["LAMBX", "LAMBY", "DATE", "PRENEI", "PRELIQ"],
+    "dropna_columns": ["LAMBX", "LAMBY", "DATE", "PRELIQ"],
+    "lambert": {"x": "LAMBX", "y": "LAMBY"},
+    "geo": {"lat": "latitude", "lon": "longitude"},
+    "date_column": "DATE",
 }

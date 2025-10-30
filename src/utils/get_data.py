@@ -39,7 +39,7 @@ def get_radiation_data():
                 click_show_results(page)                        # Cliquer sur "Afficher les résultats"
                 click_download_tab(page)                        # Cliquer sur l'onglet "Téléchargement"
                 # Lancer le téléchargement des données
-                start_downloading_data_playwright(page, f"asnr_{medium_name}_radiation_data_{start_date}_to_{end_date}.csv")
+                start_downloading_data_playwright(page, get_radiation_data_filename(medium_name, start_date, end_date))
 
         # Fermer le navigateur
         browser.close()
@@ -55,7 +55,7 @@ def get_weather_data() -> str:
     return download_file_from_url(
         METEOFRANCE_WEATHER_DOWNLOAD_URL, 
         dest_folder=DATA_RAW_DIR,
-        filename="meteofrance_weather_data.csv.gz"
+        filename=WEATHER_DATA_FILENAME
     )
 
 
@@ -69,6 +69,6 @@ def get_municipality_data() -> str:
     return download_file_from_url(
         VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL,
         dest_folder=DATA_RAW_DIR,
-        filename="villedereve_municipality_data.csv"
+        filename=MUNICIPALITY_DATA_FILENAME
     )
 

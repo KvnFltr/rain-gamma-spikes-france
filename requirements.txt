@@ -1,2 +1,5 @@
 playwright=1.55.0
 unidecode==1.4.0
+pyproj==3.7.2
+pandas==2.3.3
+numpy==2.3.4

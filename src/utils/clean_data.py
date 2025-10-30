@@ -1,12 +1,13 @@
 import pandas as pd
-from config import *
 import glob
 import os
 import unidecode
+from config import *
+from src.utils.utils import *
 
 def concatenate_radiation_data():
     # Récupération de tous les fichiers ASNR (sol, eau)
-    asnr_files = glob.glob(os.path.join(DATA_RAW_DIR, "asnr_*_radiation_data_*.csv"))
+    asnr_files = glob.glob(os.path.join(DATA_RAW_DIR, RADIATION_DATA_FILENAME_PATTERN))
 
     # Liste pour stocker les DataFrames
     dfs = []
@@ -28,37 +29,35 @@ def concatenate_radiation_data():
         dfs.append(df)
 
     # Combinaison finale
-    asnr_df = pd.concat(dfs, ignore_index=True)
+    radiation_df = pd.concat(dfs, ignore_index=True)
 
-    return asnr_df
-
-    print(f"✅ Données de radiation ASNR concaténées : {asnr_df.shape[0]} lignes, {asnr_df.shape[1]} colonnes.")
-    print(asnr_df.head())
-    print(asnr_df["Milieu de collecte"].value_counts())
-    print(asnr_df.info())
+    return radiation_df
 
 
 
-
-def clean_radiation_data(asnr_df: pd.DataFrame, config: dict) -> pd.DataFrame:
+def clean_radiation_data(radiation_df: pd.DataFrame, config: dict) -> pd.DataFrame:
     # Suppression des lignes où les colonnes spécifiées sont manquantes
-    asnr_df = asnr_df.dropna(subset=config["dropna_columns"])
+    radiation_df = radiation_df.dropna(subset=config["dropna_columns"])
 
     # Suppression des doublons
-    asnr_df = asnr_df.drop_duplicates(
+    radiation_df = radiation_df.drop_duplicates(
         subset=config["drop_duplicates_columns"],
         keep="first"
     )
+    
+    # Normalisation du nom des communes
+    radiation_df[config["municipality_name"]] = (
+        radiation_df[config["municipality_name"]]
+        .str.upper()
+        .apply(unidecode.unidecode)
+    )
+    radiation_df[config["municipality_name"]] = radiation_df[config["municipality_name"]].str.replace(r"^L'", "", regex=True)
 
-    asnr_df[config["municipality_name"]] = asnr_df[config["municipality_name"]].str.replace(r"^L'", "", regex=True)
 
     # Sélection des colonnes à conserver
-    asnr_df = asnr_df[config["required_columns"]]
-    
-    return asnr_df
+    radiation_df = radiation_df[config["required_columns"]]
 
-
-
+    return radiation_df
 
 def clean_municipality_data(mun_df: pd.DataFrame, config: dict) -> pd.DataFrame:
     # Normalisation du nom de commune : majuscules & sans accents
@@ -87,8 +86,76 @@ def clean_municipality_data(mun_df: pd.DataFrame, config: dict) -> pd.DataFrame:
 
     # Sélection des colonnes pertinentes
     mun_df = mun_df[config["required_columns"]]
+    return mun_df
 
-    print(f"✅ Données {mun_df.shape[0]} lignes, {mun_df.shape[1]} colonnes.")
-    print(mun_df.head())
-    print(mun_df.info())
-    #return mun_df
+
+
+
+def geolocate_radiation_data(
+    radiation_df: pd.DataFrame,
+    municipality_df: pd.DataFrame,
+    config_rad: dict,
+    config_mun: dict
+) -> pd.DataFrame:
+    print("Géolocalisation des données de radiation...")
+
+    # Jointure
+    merged_df = merge_dataframes(
+        left_df=radiation_df,
+        right_df=municipality_df,
+        left_key=config_rad["municipality_name"],
+        right_key=config_mun["name_column"]["cleaned"],
+        how="left"
+    )
+
+    latitude_name = config_mun["latitude_columns"]["cleaned"]
+    longitude_name = config_mun["longitude_columns"]["cleaned"]
+
+    # Vérification - combien de communes non matchées ?
+    missing = merged_df[latitude_name].isna().sum()
+    total = merged_df.shape[0]
+
+    # Supprimer les lignes sans coordonnées géographiques
+    merged_df = merged_df.dropna(subset=[latitude_name, longitude_name])
+    
+    # Supprimer la colonne ayant servie à la jointure
+    merged_df = merged_df.drop(columns=[config_mun["name_column"]["cleaned"]])
+    
+    print(f"Jointure réalisée. Taux de perte : {missing}/{total} ({missing/total:.2%})")
+    
+    return merged_df
+
+def clean_weather_data(weather_df: pd.DataFrame, config: dict) -> pd.DataFrame:
+    # Sélection des colonnes
+    weather_df = weather_df[config["required_columns"]]
+
+    print("suppr nan")
+    # Suppression des lignes où les données essentielles sont manquantes
+    weather_df = weather_df.dropna(subset=config["dropna_columns"])
+
+    print("conv lambert")
+    # Conversion coordonnées Lambert -> Latitude / Longitude
+    weather_df = convert_lambert_to_wgs84(
+        df=weather_df,
+        x_col=config["lambert"]["x"],
+        y_col=config["lambert"]["y"],
+        lat_col=config["geo"]["lat"],
+        lon_col=config["geo"]["lon"]
+    )
+    print("suppr lamb")
+    # Suppression des colonnes Lambert
+    weather_df = weather_df.drop(columns=[config["lambert"]["x"], config["lambert"]["y"]])
+    
+    print("conv de la date en datetime")
+    # Conversion de DATE en datetime (ex: 20200101 -> 2020-01-01)
+    weather_df[config["date_column"]] = pd.to_datetime(
+        weather_df[config["date_column"]].astype(str),
+        format="%Y%m%d",
+        errors="coerce"
+    )
+    weather_df = weather_df.dropna(subset=[config["date_column"]])
+    
+    print(weather_df.info())
+    print(weather_df.head())
+
+    return weather_df
