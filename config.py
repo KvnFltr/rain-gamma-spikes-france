@@ -3,6 +3,9 @@ ASNR_RADIATION_URL = "https://mesure-radioactivite.fr/#/expert"
 METEOFRANCE_WEATHER_DOWNLOAD_URL = "https://www.data.gouv.fr/api/1/datasets/r/92065ec0-ea6f-4f5e-8827-4344179c0a7f"
 VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL = "https://www.data.gouv.fr/api/1/datasets/r/f5df602b-3800-44d7-b2df-fa40a0350325"
 
+DATA_RAW_DIR = "data/raw"
+DATA_CLEANED_DIR = "data/cleaned"
+
 TIMEOUT = 10000 # Timeout en millisecondes pour les actions Playwright
 INITIAL_TIMEOUT = 60000 # Timeout initial pour le lancement du navigateur et le chargement de la page
 TIMEOUT_REFUSE_COOKIES = 100 # Timeout spécifique pour la bannière de cookies
@@ -27,9 +30,6 @@ RADIATION_MEASUREMENT_ENVIRONMENTS = {
         ]
     }   
 }
-
-DATA_RAW_DIR = "data/raw"
-DATA_CLEANED_DIR = "data/cleaned"
 
 SELECTORS = {
     "modal": {
@@ -70,5 +70,59 @@ SELECTORS = {
             "button": "li[ng-click='showDownloadTree()']"
         },
         "download_button": "button[ng-click='downloadTree()']"
+    }
+}
+
+CLEAN_RADIATION_DATA_CONFIG = {
+    "required_columns": [
+        "Date de début de prélèvement",
+        "Date de fin de prélèvement",
+        "Résultat",
+        "Incertitude absolue",
+        "Unité",
+        "Commune",
+        "Espèce",
+        "Nature",
+        "Radion",
+        "Milieu de collecte"
+    ],
+    "dropna_columns": [
+        "Commune",
+        "Date de début de prélèvement",
+        "Résultat",
+        "Unité",
+        "Radion",
+        "Milieu de collecte"
+    ],
+    "drop_duplicates_columns": [
+        "Date de début de prélèvement",
+        "Date de fin de prélèvement",
+        "Commune",
+        "Radion",
+        "Milieu de collecte"
+    ],
+    "municipality_name": "Commune"
+}
+
+CLEAN_MUNICIPALITY_DATA_CONFIG = {
+    "required_columns": [
+        "nom",
+        "latitude",
+        "longitude"
+    ],
+    "name_column": {
+        "primary": "nom_standard_majuscule",
+        "cleaned": "nom"
+    },
+    "population_column": "population",
+    "latitude_columns": {
+        "primary": "latitude_centre",
+        "fallback": "latitude_mairie",
+        "cleaned": "latitude"
+    },
+    "longitude_columns": {
+        "primary": "longitude_centre",
+        "fallback": "longitude_mairie",
+        "cleaned": "longitude"
     }
 }
