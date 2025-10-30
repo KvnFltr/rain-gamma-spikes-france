@@ -23,24 +23,12 @@ def get_radiation_data():
 
         close_modal(page) # Fermer la modale informative si elle est présente
         
-        # Définitions des périodes de collecte pour chaque milieu
-        # (Le téléchargement sur le site est limité en taille de fichier)
-        soil_periods = [("01-janvier-2020", "01-janvier-2025")]
-        water_periods = [
-            ("01-janvier-2020", "01-janvier-2021"),
-            ("01-janvier-2021", "01-janvier-2022"),
-            ("01-janvier-2022", "01-janvier-2023"),
-            ("01-janvier-2023", "01-janvier-2024"),
-            ("01-janvier-2024", "01-janvier-2025")
-        ]
+        
+        for medium_name, medium_info in RADIATION_MEASUREMENT_ENVIRONMENTS.items():
+            medium_tag = medium_info["tag"]
+            periods = medium_info["temporal_subdivisions"]
 
-        for medium in [("Sol", "soil"), ("Eau", "water")]:
-            medium_tag, medium_name = medium
-            
-            if medium_tag == "Sol":
-                periods = soil_periods
-            else:
-                periods = water_periods
+            # Procéder en plusieurs périodes pour ne pas dépasser la taille maximale autorisée par le site
             for period in periods:
                 start_date, end_date = period
 
@@ -66,7 +54,7 @@ def get_weather_data() -> str:
     """
     return download_file_from_url(
         METEOFRANCE_WEATHER_DOWNLOAD_URL, 
-        dest_folder="data/raw", 
+        dest_folder=DATA_RAW_DIR,
         filename="meteofrance_weather_data.csv.gz"
     )
 
@@ -80,7 +68,7 @@ def get_municipality_data() -> str:
     """
     return download_file_from_url(
         VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL,
-        dest_folder="data/raw",
+        dest_folder=DATA_RAW_DIR,
         filename="villedereve_municipality_data.csv"
     )
 

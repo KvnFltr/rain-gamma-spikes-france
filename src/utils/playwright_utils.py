@@ -168,7 +168,7 @@ def _extract_zip(zip_path, extract_to_dir, new_csv_name):
     # Supprimer le fichier ZIP
     os.remove(zip_path)
 
-def _click_on_download(page, button_selector, csv_name, description):
+def _click_on_download(page, button_selector, csv_name, destination_dir, description):
 
     def action():
         # Localiser et cliquer sur le bouton de téléchargement
@@ -178,15 +178,14 @@ def _click_on_download(page, button_selector, csv_name, description):
         download = download_info.value
 
         # Chemin pour sauvegarder le fichier téléchargé
-        download_path = os.path.join("data", "raw", download.suggested_filename)
+        download_path = os.path.join(destination_dir, download.suggested_filename)
         
         # Sauvegarder le fichier ZIP téléchargé
         download.save_as(download_path)
         
         # Extraire et renommer le CSV, supprimer le ZIP
         new_csv_name = csv_name
-        extract_to_dir = os.path.join("data", "raw")
-        _extract_zip(download_path, extract_to_dir, new_csv_name)
+        _extract_zip(download_path, destination_dir, new_csv_name)
 
     _safe_playwright_action(description, action)
 
@@ -265,5 +264,6 @@ def start_downloading_data_playwright(page, csv_name):
         page,
         SELECTORS["download"]["download_button"],
         csv_name,
-        f"⏳ Téléchargement des données au format CSV..."
+        DATA_RAW_DIR,
+        "Téléchargement des données au format CSV"
     )

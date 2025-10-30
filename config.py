@@ -2,9 +2,34 @@
 ASNR_RADIATION_URL = "https://mesure-radioactivite.fr/#/expert"
 METEOFRANCE_WEATHER_DOWNLOAD_URL = "https://www.data.gouv.fr/api/1/datasets/r/92065ec0-ea6f-4f5e-8827-4344179c0a7f"
 VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL = "https://www.data.gouv.fr/api/1/datasets/r/f5df602b-3800-44d7-b2df-fa40a0350325"
+
 TIMEOUT = 10000 # Timeout en millisecondes pour les actions Playwright
 INITIAL_TIMEOUT = 60000 # Timeout initial pour le lancement du navigateur et le chargement de la page
 TIMEOUT_REFUSE_COOKIES = 100 # Timeout spécifique pour la bannière de cookies
+
+RADIATION_MEASUREMENT_ENVIRONMENTS = {
+    "soil": {
+        "tag": "Sol",
+        "name": "soil",
+        "temporal_subdivisions": [
+            ("01-janvier-2020", "01-janvier-2025")
+        ]
+    },
+    "water": {
+        "tag": "Eau",
+        "name": "water",
+        "temporal_subdivisions": [
+            ("01-janvier-2020", "01-janvier-2021"),
+            ("01-janvier-2021", "01-janvier-2022"),
+            ("01-janvier-2022", "01-janvier-2023"),
+            ("01-janvier-2023", "01-janvier-2024"),
+            ("01-janvier-2024", "01-janvier-2025")
+        ]
+    }   
+}
+
+DATA_RAW_DIR = "data/raw"
+DATA_CLEANED_DIR = "data/cleaned"
 
 SELECTORS = {
     "modal": {
