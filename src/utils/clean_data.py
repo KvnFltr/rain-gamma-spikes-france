@@ -40,7 +40,7 @@ def concatenate_radiation_data():
 
 
 
-def remove_unwanted_radiation_data(asnr_df: pd.DataFrame, config: dict) -> pd.DataFrame:
+def clean_radiation_data(asnr_df: pd.DataFrame, config: dict) -> pd.DataFrame:
     # Suppression des lignes où les colonnes spécifiées sont manquantes
     asnr_df = asnr_df.dropna(subset=config["dropna_columns"])
 
