@@ -17,26 +17,6 @@ TIMEOUT = 10000 # Timeout en millisecondes pour les actions Playwright
 INITIAL_TIMEOUT = 60000 # Timeout initial pour le lancement du navigateur et le chargement de la page
 TIMEOUT_REFUSE_COOKIES = 100 # Timeout spécifique pour la bannière de cookies
 
-RADIATION_MEASUREMENT_ENVIRONMENTS = {
-    "soil": {
-        "tag": "Sol",
-        "name": "soil",
-        "temporal_subdivisions": [
-            ("01-janvier-2020", "01-janvier-2025")
-        ]
-    },
-    "water": {
-        "tag": "Eau",
-        "name": "water",
-        "temporal_subdivisions": [
-            ("01-janvier-2020", "01-janvier-2021"),
-            ("01-janvier-2021", "01-janvier-2022"),
-            ("01-janvier-2022", "01-janvier-2023"),
-            ("01-janvier-2023", "01-janvier-2024"),
-            ("01-janvier-2024", "01-janvier-2025")
-        ]
-    }   
-}
 
 SELECTORS = {
     "modal": {
@@ -80,7 +60,28 @@ SELECTORS = {
     }
 }
 
-CLEAN_RADIATION_DATA_CONFIG = {
+RADIATION_DATA_CONFIG = {
+    "medium": {
+        "soil": {
+            "tag": "Sol",
+            "name": "soil",
+            "temporal_subdivisions": [
+                ("01-janvier-2020", "01-janvier-2025")
+            ]
+        },
+        "water": {
+            "tag": "Eau",
+            "name": "water",
+            "temporal_subdivisions": [
+                ("01-janvier-2020", "01-janvier-2021"),
+                ("01-janvier-2021", "01-janvier-2022"),
+                ("01-janvier-2022", "01-janvier-2023"),
+                ("01-janvier-2023", "01-janvier-2024"),
+                ("01-janvier-2024", "01-janvier-2025")
+            ]
+        }
+    },
+
     "required_columns": [
         "Date de début de prélèvement",
         "Date de fin de prélèvement",
@@ -108,10 +109,16 @@ CLEAN_RADIATION_DATA_CONFIG = {
         "Radion",
         "Milieu de collecte"
     ],
-    "municipality_name": "Commune"
+    "municipality_name": "Commune",
+    "date_start_column": "Date de début de prélèvement",
+
+    "latitude_columns": {"cleaned": "latitude"},
+    "longitude_columns": {"cleaned": "longitude"},
+    "distance_to_nearest_weather_data": "DISTANCE_RADIATION_WEATHER_M",
+    "measurement_environment_column":"Milieu de collecte"
 }
 
-CLEAN_MUNICIPALITY_DATA_CONFIG = {
+MUNICIPALITY_DATA_CONFIG = {
     "required_columns": [
         "nom",
         "latitude",
@@ -140,4 +147,7 @@ WEATHER_DATA_CONFIG = {
     "lambert": {"x": "LAMBX", "y": "LAMBY"},
     "geo": {"lat": "latitude", "lon": "longitude"},
     "date_column": "DATE",
+    "snowfall_column":"PRENEI",
+    "rainfall_column":"PRELIQ"
 }
+

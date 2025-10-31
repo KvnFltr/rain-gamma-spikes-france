@@ -4,8 +4,14 @@ import gzip
 import shutil
 import pandas as pd
 from pyproj import Transformer
+import glob
 
-def download_file_from_url(url: str, dest_folder: str = "data/raw", filename: str | None = None) -> str:
+
+def download_file_from_url(
+    url: str, 
+    dest_folder: str = "data/raw", 
+    filename: str | None = None
+) -> str:
     """
     Télécharge un fichier depuis l'URL donnée et le place dans le dossier dest_folder.
     Si le fichier est un .gz, il est automatiquement décompressé en .csv.
@@ -79,6 +85,54 @@ def merge_dataframes(
         suffixes=suffixes
     )
     return merged
+
+
+
+def concatenate_csv_files(
+    data_raw_dir: str,
+    filename_pattern: str,
+    medium_column_name: str,
+    medium_mapping: dict = None,
+    delimiter: str = ";"
+) -> pd.DataFrame:
+    """
+    Fonction générique pour concaténer plusieurs fichiers CSV en un seul DataFrame,
+    en ajoutant une colonne indiquant le milieu de collecte.
+
+    Args:
+        data_raw_dir (str): Répertoire contenant les fichiers CSV.
+        filename_pattern (str): Motif de nom de fichier pour la recherche.
+        config (dict): Dictionnaire de configuration (ex: RADIATION_DATA_CONFIG).
+        medium_column_name (str): Nom de la colonne à ajouter pour le milieu de collecte.
+        medium_mapping (dict, optionnel): Dictionnaire de mapping des milieux.
+        delimiter (str, optionnel): Délimiteur utilisé dans les fichiers CSV.
+
+    Returns:
+        pd.DataFrame: DataFrame concaténé.
+    """
+    
+    # Récupération de tous les fichiers correspondants
+    files = glob.glob(os.path.join(data_raw_dir, filename_pattern))
+    dfs = []
+
+    for file in files:
+        # Extraire le nom du milieu depuis le nom du fichier
+        file_name = os.path.basename(file)
+        medium_name = file_name.split("_")[1]  # Ex: "asnr_soil_radiation_data_..." -> "soil"
+
+        # Charger le fichier CSV
+        df = pd.read_csv(file, delimiter=delimiter)
+
+        # Ajouter la colonne "Milieu de collecte" en fonction du milieu détecté
+        if medium_mapping and medium_name in medium_mapping:
+            df[medium_column_name] = medium_mapping[medium_name]["tag"]
+        else:
+            df[medium_column_name] = medium_name  # Cas par défaut
+
+        dfs.append(df)
+
+    # Combinaison finale
+    return pd.concat(dfs, ignore_index=True)
 
 
 def convert_lambert_to_wgs84(df, x_col, y_col, lat_col, lon_col):
