@@ -28,7 +28,7 @@ def clean_all_data():
     print("clean mun")
     mun_df = clean_municipality_data(mun_df, MUNICIPALITY_DATA_CONFIG)
 
-    print("fusion asnr, num")
+    print("fusion asnr, mun")
     asnr_geo = geolocate_radiation_data(asnr_df, mun_df, RADIATION_DATA_CONFIG, MUNICIPALITY_DATA_CONFIG)
     
     print("clean weather")
@@ -168,8 +168,6 @@ def geolocate_radiation_data(
 
     print(f"Jointure réalisée. Conservés : {total-missing}/{total} ({(total-missing)/total:.2%})")
     
-    #merged_df.to_csv(os.path.join(DATA_CLEANED_DIR, "radiation_geo.csv"), sep=";",index=False) ########################## debug
-
     return merged_df
 
 
@@ -186,6 +184,8 @@ def clean_weather_data(weather_df: pd.DataFrame, config: dict) -> pd.DataFrame:
     weather_df[config["lambert"]["y"]] *= 100
 
     # Conversion coordonnées Lambert -> Latitude / Longitude
+    # Essaie de multiplier par 1000 pour chaque lambx/lamby avant de convertir Lambert
+    
     weather_df = convert_lambert_to_wgs84(
         df=weather_df,
         x_col=config["lambert"]["x"],
@@ -203,10 +203,7 @@ def clean_weather_data(weather_df: pd.DataFrame, config: dict) -> pd.DataFrame:
         errors="coerce"
     )
     weather_df = weather_df.dropna(subset=[config["date_column"]])
-    
-
-    #weather_df.to_csv(os.path.join(DATA_CLEANED_DIR, "weather.csv"), sep=";",index=False) ########################## debug
-    
+        
     return weather_df
 
 
