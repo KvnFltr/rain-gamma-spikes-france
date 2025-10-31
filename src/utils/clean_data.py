@@ -135,6 +135,8 @@ def clean_weather_data(weather_df: pd.DataFrame, config: dict) -> pd.DataFrame:
 
     print("conv lambert")
     # Conversion coordonnées Lambert -> Latitude / Longitude
+    # Essaie de multiplier par 1000 pour chaque lambx/lamby avant de convertir Lambert
+    
     weather_df = convert_lambert_to_wgs84(
         df=weather_df,
         x_col=config["lambert"]["x"],
