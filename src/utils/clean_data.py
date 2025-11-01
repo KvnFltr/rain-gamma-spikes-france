@@ -18,6 +18,9 @@ def clean_all_data() -> None:
     4. Associates weather data with radiation measurements
     5. Saves the final cleaned dataset
     """
+
+    # Clear the clean data directory
+    delete_files_in_directory(DATA_CLEANED_DIR)
     
     # Load raw data
     print("Loading radiation data...")
@@ -28,7 +31,7 @@ def clean_all_data() -> None:
     )
 
     print("Loading municipality data...")
-    mun_df = pd.read_csv(os.path.join(DATA_RAW_DIR, MUNICIPALITY_DATA_FILENAME), sep=",")
+    mun_df = pd.read_csv(os.path.join(DATA_RAW_DIR, MUNICIPALITY_DATA_FILENAME), sep=",", low_memory=False)
 
     print("Loading weather data...")
     weather_df = pd.read_csv(os.path.join(DATA_RAW_DIR, WEATHER_DATA_FILENAME), sep=";")
@@ -214,7 +217,7 @@ def geolocate_radiation_data(
     merged_df[date_column] = pd.to_datetime(merged_df[date_column], errors="coerce")
     merged_df = merged_df.dropna(subset=[date_column])
 
-    print(f"Join completed. Kept: {total-missing}/{total} ({(total-missing)/total:.2%})")
+    print(f"✅ Join completed. Kept: {total-missing}/{total} ({(total-missing)/total:.2%})")
     
     return merged_df
 

@@ -3,14 +3,14 @@ from src.utils.clean_data import *
 
 def main():
     
-    print("=== Lancement du téléchargement des données ===")
-    get_all_data()
-    print("=== Fin du téléchargement des données ===")
+    #print("=== Start downloading data ===")
+    #get_all_data()
+    #print("=== Data download complete ===")
     
-    print("=== Lancement du nettoyage des données ===")
+    print("=== Start cleaning up data ===")
     clean_all_data()
-    print("=== Fin du nettoyage des données ===")
-
+    print("=== Data cleaning complete ===")
+    
 
 if __name__ == "__main__":
     main()

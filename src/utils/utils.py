@@ -192,3 +192,34 @@ def convert_lambert_to_wgs84(
     )
 
     return df
+
+
+def delete_files_in_directory(directory_path: str) -> None:
+    """
+    Deletes all files in the specified directory.
+
+    Args:
+        directory_path (str): Absolute or relative path to the directory.
+
+    Raises:
+        Exception: If any error occurs (e.g., directory not found, permission denied, etc.).
+    """
+    try:
+        # Check if the path exists and is a directory
+        if not os.path.isdir(directory_path):
+            raise Exception(f"The path '{directory_path}' is not a valid directory.")
+
+        # Iterate over all items in the directory
+        for item in os.listdir(directory_path):
+            item_path = os.path.join(directory_path, item)
+
+            # Check if the item is a file (not a subdirectory)
+            if os.path.isfile(item_path):
+                os.remove(item_path)
+                print(f"Deleted file: {item_path}")
+
+        print(f"All files in the directory '{directory_path}' have been deleted.")
+
+    except Exception as e:
+        print(f"⚠️ An error occurred: {e}")
+        raise

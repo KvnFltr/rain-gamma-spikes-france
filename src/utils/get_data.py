@@ -2,7 +2,7 @@ from typing import Dict, Any
 from playwright.sync_api import sync_playwright
 from config import *
 from src.utils.playwright_utils import *
-from src.utils.utils import download_file_from_url
+from src.utils.utils import *
 
 
 def get_all_data() -> None:
@@ -12,6 +12,11 @@ def get_all_data() -> None:
     This function orchestrates the download of all required datasets by calling
     the appropriate download functions with predefined configuration values.
     """
+
+    # Clear the raw data directory
+    delete_files_in_directory(DATA_RAW_DIR)
+
+    # Download all required datasets
     get_radiation_data(
         radiation_config=RADIATION_DATA_CONFIG,
         asnr_radiation_url=ASNR_RADIATION_URL,
