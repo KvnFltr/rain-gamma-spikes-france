@@ -1,24 +1,33 @@
+from typing import Dict, List, Tuple
 
-ASNR_RADIATION_URL = "https://mesure-radioactivite.fr/#/expert"
-METEOFRANCE_WEATHER_DOWNLOAD_URL = "https://www.data.gouv.fr/api/1/datasets/r/92065ec0-ea6f-4f5e-8827-4344179c0a7f"
-VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL = "https://www.data.gouv.fr/api/1/datasets/r/f5df602b-3800-44d7-b2df-fa40a0350325"
+# API URLs
+ASNR_RADIATION_URL: str = "https://mesure-radioactivite.fr/#/expert"
+METEOFRANCE_WEATHER_DOWNLOAD_URL: str = "https://www.data.gouv.fr/api/1/datasets/r/92065ec0-ea6f-4f5e-8827-4344179c0a7f"
+VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL: str = "https://www.data.gouv.fr/api/1/datasets/r/f5df602b-3800-44d7-b2df-fa40a0350325"
 
-DATA_RAW_DIR = "data/raw"
-DATA_CLEANED_DIR = "data/cleaned"
+# Data directory paths
+DATA_RAW_DIR: str = "data/raw"
+DATA_CLEANED_DIR: str = "data/cleaned"
 
-WEATHER_DATA_FILENAME = "meteofrance_weather_data.csv.gz"
-MUNICIPALITY_DATA_FILENAME = "villedereve_municipality_data.csv"
-
+# Names of data files
+WEATHER_DATA_FILENAME_GZ: str = "meteofrance_weather_data.csv.gz"
+WEATHER_DATA_FILENAME: str = "meteofrance_weather_data.csv"
+MUNICIPALITY_DATA_FILENAME: str = "villedereve_municipality_data.csv"
+CLEANED_DATA_FILENAME: str = "data.csv"
 RADIATION_DATA_FILENAME_PATTERN = "asnr_*_radiation_data_*.csv"
+
 def get_radiation_data_filename(medium_name: str, start_date: str, end_date: str) -> str:
     return f"asnr_{medium_name}_radiation_data_{start_date}_to_{end_date}.csv"
 
-TIMEOUT = 10000 # Timeout en millisecondes pour les actions Playwright
-INITIAL_TIMEOUT = 60000 # Timeout initial pour le lancement du navigateur et le chargement de la page
-TIMEOUT_REFUSE_COOKIES = 100 # Timeout spécifique pour la bannière de cookies
+# Timeout in milliseconds for Playwright actions
+TIMEOUT: int = 10000
+# Initial timeout for browser launch and page loading
+INITIAL_TIMEOUT: int = 60000
+# Specific timeout for cookie banner
+TIMEOUT_REFUSE_COOKIES: int = 100
 
-
-SELECTORS = {
+# CSS selectors for web scraping
+SELECTORS: Dict[str, Dict[str, str]] = {
     "modal": {
         "container": "div.modal-content", 
         "button": "div.modal-content span.close"
@@ -60,7 +69,8 @@ SELECTORS = {
     }
 }
 
-RADIATION_DATA_CONFIG = {
+# Radiation data configuration
+RADIATION_DATA_CONFIG: Dict[str, Dict] = {
     "medium": {
         "soil": {
             "tag": "Sol",
@@ -81,7 +91,6 @@ RADIATION_DATA_CONFIG = {
             ]
         }
     },
-
     "required_columns": [
         "Date de début de prélèvement",
         "Date de fin de prélèvement",
@@ -118,7 +127,8 @@ RADIATION_DATA_CONFIG = {
     "measurement_environment_column":"Milieu de collecte"
 }
 
-MUNICIPALITY_DATA_CONFIG = {
+# Municipality data configuration
+MUNICIPALITY_DATA_CONFIG: Dict[str, any] = {
     "required_columns": [
         "nom",
         "latitude",
@@ -141,7 +151,8 @@ MUNICIPALITY_DATA_CONFIG = {
     }
 }
 
-WEATHER_DATA_CONFIG = {
+# Weather data configuration
+WEATHER_DATA_CONFIG: Dict[str, any] = {
     "required_columns": ["LAMBX", "LAMBY", "DATE", "PRENEI", "PRELIQ"],
     "dropna_columns": ["LAMBX", "LAMBY", "DATE", "PRELIQ"],
     "lambert": {"x": "LAMBX", "y": "LAMBY"},
@@ -150,4 +161,3 @@ WEATHER_DATA_CONFIG = {
     "snowfall_column":"PRENEI",
     "rainfall_column":"PRELIQ"
 }
-
