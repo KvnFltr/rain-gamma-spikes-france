@@ -1,13 +1,27 @@
-from typing import Dict, List, Tuple
-
+from typing import Dict
+import os
 # API URLs
 ASNR_RADIATION_URL: str = "https://mesure-radioactivite.fr/#/expert"
 METEOFRANCE_WEATHER_DOWNLOAD_URL: str = "https://www.data.gouv.fr/api/1/datasets/r/92065ec0-ea6f-4f5e-8827-4344179c0a7f"
 VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL: str = "https://www.data.gouv.fr/api/1/datasets/r/f5df602b-3800-44d7-b2df-fa40a0350325"
 
 # Data directory paths
-DATA_RAW_DIR: str = "data/raw"
-DATA_CLEANED_DIR: str = "data/cleaned"
+BASE_DATA_DIR: str = "data"
+DATA_RAW_DIR: str = os.path.join(BASE_DATA_DIR, "raw")
+DATA_CLEANED_DIR: str = os.path.join(BASE_DATA_DIR, "cleaned")
+
+# Database configuration
+USE_OF_A_DATABASE: bool = False # If we want to store the data in an SQLite database. 
+# Note that importing data into the database can take several tens of minutes for very large dataframes (i.e. the weather file)
+# It is preferable to work directly on the pandas dataframes (it's much quicker).
+DATABASE_RAW_DIR: str = os.path.join(DATA_RAW_DIR, "database")
+DATABASE_RAW_PATH = os.path.join(DATABASE_RAW_DIR, "raw_data.db")
+
+# Table names
+WEATHER_TABLE_NAME = "weather_data"
+MUNICIPALITY_TABLE_NAME = "municipality_data"
+RADIATION_TABLE_PREFIX = "radiation_data"  # Prefix for radiation tables
+RADIATION_CONCATENATED_TABLE_NAME = "radiation_data_concatenated"  # Concatenated table
 
 # Names of data files
 WEATHER_DATA_FILENAME_GZ: str = "meteofrance_weather_data.csv.gz"
@@ -20,7 +34,7 @@ def get_radiation_data_filename(medium_name: str, start_date: str, end_date: str
     return f"asnr_{medium_name}_radiation_data_{start_date}_to_{end_date}.csv"
 
 # Timeout in milliseconds for Playwright actions
-TIMEOUT: int = 10000
+TIMEOUT: int = 30000
 # Initial timeout for browser launch and page loading
 INITIAL_TIMEOUT: int = 60000
 # Specific timeout for cookie banner
@@ -160,4 +174,26 @@ WEATHER_DATA_CONFIG: Dict[str, any] = {
     "date_column": "DATE",
     "snowfall_column":"PRENEI",
     "rainfall_column":"PRELIQ"
+}
+
+# Cleaned data configuration
+CLEANED_DATA_CONFIG: Dict[str, Dict[str, str]] = {
+    "rename": {
+        "Date de début de prélèvement": "Date start sampling radioactivity",
+        "Date de fin de prélèvement": "Date end sampling radioactivity",
+        "Résultat": "Result radioactivity",
+        "Incertitude absolue": "Absolute uncertainty radioactivity",
+        "Unité": "Unit radioactivity",
+        "Commune": "Municipality name",
+        "Espèce": "Species measurement environment radioactivity",
+        "Nature": "Nature measurement environment radioactivity",
+        "Radion": "Radionuclide",
+        "Milieu de collecte": "Measurement environment",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "DATE_METEO": "Date weather",
+        "PRENEI": "Snowfall",
+        "PRELIQ": "Rainfall",
+        "DISTANCE_RADIATION_WEATHER_M": "Distance measurement weather and radiation m"
+    }
 }

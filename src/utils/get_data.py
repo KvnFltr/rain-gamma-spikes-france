@@ -1,9 +1,10 @@
 from typing import Dict, Any
 from playwright.sync_api import sync_playwright
 from config import *
-from src.utils.playwright_utils import *
 from src.utils.utils import *
-
+from src.utils.playwright_utils import *
+from src.utils.db_utils import *
+import os
 
 def get_all_data() -> None:
     """
@@ -15,44 +16,61 @@ def get_all_data() -> None:
 
     # Clear the raw data directory
     delete_files_in_directory(DATA_RAW_DIR)
+    delete_files_in_directory(DATABASE_RAW_DIR)
 
+    
     # Download all required datasets
     get_radiation_data(
         radiation_config=RADIATION_DATA_CONFIG,
         asnr_radiation_url=ASNR_RADIATION_URL,
-        initial_timeout=INITIAL_TIMEOUT
+        initial_timeout=INITIAL_TIMEOUT,
+        db_path=DATABASE_RAW_PATH,
+        table_prefix=RADIATION_TABLE_PREFIX,
+        data_raw_dir=DATA_RAW_DIR
     )
+    
     get_weather_data(
         data_raw_dir=DATA_RAW_DIR,
+        weather_data_filename_gz=WEATHER_DATA_FILENAME_GZ,
         meteofrance_weather_download_url=METEOFRANCE_WEATHER_DOWNLOAD_URL,
-        weather_data_filename=WEATHER_DATA_FILENAME_GZ
+        db_path=DATABASE_RAW_PATH,
+        table_name=WEATHER_TABLE_NAME
     )
+    
     get_municipality_data(
         villedereve_municipality_download_url=VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL,
         raw_data_dir=DATA_RAW_DIR,
-        municipality_data_filename=MUNICIPALITY_DATA_FILENAME
+        municipality_data_filename=MUNICIPALITY_DATA_FILENAME,
+        db_path=DATABASE_RAW_PATH,
+        table_name=MUNICIPALITY_TABLE_NAME
     )
-
 
 
 def get_radiation_data(
     radiation_config: Dict[str, Any],
     asnr_radiation_url: str,
-    initial_timeout: int
+    initial_timeout: int,
+    db_path: str,
+    table_prefix: str,
+    data_raw_dir: str
 ) -> None:
     """
-    Download radiation data from ASNR by interacting with the web page.
+    Download radiation data from ASNR by interacting with the web page and save to SQLite.
     
     This function uses Playwright to automate web browser interactions with the ASNR
     radiation measurement website. It handles modal dialogs, cookie banners, and 
     downloads data for multiple measurement environments (soil, water) across 
-    different time periods.
+    different time periods. Each downloaded dataset is saved as a CSV file and
+    also stored in a separate SQLite table.
     
     Args:
         radiation_config: Configuration dictionary containing medium types and 
             temporal subdivisions for data collection.
         asnr_radiation_url: URL of the ASNR radiation data website.
         initial_timeout: Initial timeout in milliseconds for page loading.
+        db_path: Path to the SQLite database file.
+        table_prefix: Prefix for radiation table names in the database.
+        data_raw_dir: Path to the raw data directory where the file will be saved.
     """
 
     # Install required Playwright browsers
@@ -80,61 +98,111 @@ def get_radiation_data(
                 refuse_cookies(page)                             # Refuse cookies if the banner is present
                 click_show_results(page)                         # Click on "Show results"
                 click_download_tab(page)                         # Click on the "Download" tab
-                # Start downloading the data
-                start_downloading_data_playwright(page, get_radiation_data_filename(medium_name, start_date, end_date))
+                
+                # Get the filename for this period
+                filename = get_radiation_data_filename(medium_name, start_date, end_date)
+                
+                # Start downloading the data and get the dataframe
+                start_downloading_data_playwright(page, filename)
+
+                if USE_OF_A_DATABASE:
+                    # Get the full path to the downloaded CSV file
+                    csv_file_path = os.path.join(data_raw_dir, filename)
+
+                    # Save the dataframe to SQLite database
+                    # Create a unique table name for each medium and period
+                    table_name = f"{table_prefix}_{medium_name}_{start_date.replace('-', '')}_{end_date.replace('-', '')}"
+                    save_csv_to_sqlite(
+                        csv_path=csv_file_path,
+                        db_path=db_path,
+                        table_name=table_name,
+                        compression=None  # Radiation CSV files are not compressed
+                    )
 
         # Close the browser
         browser.close()
 
 
-
 def get_weather_data(
     data_raw_dir: str,
     meteofrance_weather_download_url: str,
-    weather_data_filename: str
-) -> str:
+    weather_data_filename_gz: str,
+    db_path: str,
+    table_name: str,
+    compression: str = 'gzip'
+) -> None:
     """
-    Download weather data from Météo-France and save it to the raw data directory.
+    Download weather data from Météo-France, save it to the raw data directory,
+    and load it into a SQLite database.
     
-    This function retrieves meteorological data from the Météo-France open data portal
-    and saves it as a compressed CSV file in the specified directory.
+    This function retrieves meteorological data from the Météo-France open data portal,
+    saves it as a compressed CSV file in the specified directory, and then loads
+    the raw data into a SQLite database table.
     
     Args:
         data_raw_dir: Path to the raw data directory where the file will be saved.
         meteofrance_weather_download_url: URL to download the weather data from.
-        weather_data_filename: Name of the file to save (including extension).
-    
-    Returns:
-        str: Absolute path of the downloaded file.
+        weather_data_filename_gz: Name of the file to save (including extension).
+        db_path: Path to the SQLite database file.
+        table_name: Name of the table to create in the database.
     """
-    return download_file_from_url(
+    
+    # Download the file
+    download_file_from_url(
         url=meteofrance_weather_download_url, 
         dest_folder=data_raw_dir,
-        filename=weather_data_filename
+        filename=weather_data_filename_gz
     )
+    
+    if USE_OF_A_DATABASE:
+        # Save to SQLite database
+        compression = compression
+        save_csv_to_sqlite(
+            csv_path=os.path.join(data_raw_dir, weather_data_filename_gz),
+            db_path=db_path,
+            table_name=table_name,
+            compression=compression
+        )
+
+    # Delete the ZIP file
+    os.remove(os.path.join(data_raw_dir, weather_data_filename_gz))
 
 
 def get_municipality_data(
     villedereve_municipality_download_url: str,
     raw_data_dir: str,
-    municipality_data_filename: str
-) -> str:
+    municipality_data_filename: str,
+    db_path: str,
+    table_name: str
+) -> None:
     """
-    Download municipality data from Ville de Rêve and save it to the raw data directory.
+    Download municipality data from Ville de Rêve, save it to the raw data directory,
+    and load it into a SQLite database.
     
     This function retrieves French municipality information including names, coordinates,
-    and population data, and saves it to the specified directory.
+    and population data, saves it to the specified directory, and then loads the raw
+    data into a SQLite database table.
     
     Args:
         villedereve_municipality_download_url: URL to download the municipality data from.
         raw_data_dir: Path to the raw data directory where the file will be saved.
         municipality_data_filename: Name of the file to save (including extension).
+        db_path: Path to the SQLite database file.
+        table_name: Name of the table to create in the database.
     
-    Returns:
-        str: Absolute path of the downloaded file.
     """
-    return download_file_from_url(
+    # Download the file
+    file_path = download_file_from_url(
         villedereve_municipality_download_url,
         dest_folder=raw_data_dir,
         filename=municipality_data_filename
     )
+    
+    if USE_OF_A_DATABASE:
+        # Save to SQLite database
+        save_csv_to_sqlite(
+            csv_path=file_path,
+            db_path=db_path,
+            table_name=table_name,
+            sep=","
+        )

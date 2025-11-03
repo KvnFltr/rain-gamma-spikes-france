@@ -2,6 +2,7 @@ import sys
 import subprocess
 import zipfile
 import os
+import pandas as pd
 from typing import Callable
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
 from config import *
@@ -210,9 +211,6 @@ def _extract_zip(
     # Rename the extracted CSV file
     os.rename(extracted_csv_path, new_csv_path)
 
-    # Delete the ZIP file
-    os.remove(zip_path)
-
 
 def _click_on_download(
     page: Page,
@@ -231,6 +229,7 @@ def _click_on_download(
         csv_name: Name for the final CSV file.
         destination_dir: Directory where the file should be saved.
         description: Textual description of the action for logging.
+        timeout: Timeout for the selector.
     """
     def action() -> None:
         # Locate and click on the download button
@@ -248,6 +247,9 @@ def _click_on_download(
         # Extract and rename the CSV, delete the ZIP
         new_csv_name = csv_name
         _extract_zip(download_path, destination_dir, new_csv_name)
+
+        # Delete the ZIP file
+        os.remove(download_path)
 
     _safe_playwright_action(description, action)
 

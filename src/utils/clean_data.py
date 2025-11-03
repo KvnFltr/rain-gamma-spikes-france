@@ -6,6 +6,8 @@ import unidecode
 from sklearn.neighbors import BallTree
 from config import *
 from src.utils.utils import *
+from src.utils.db_utils import *
+from config import *
 
 def clean_all_data() -> None:
     """
@@ -28,14 +30,20 @@ def clean_all_data() -> None:
         data_raw_dir=DATA_RAW_DIR,
         radiation_data_filename_pattern=RADIATION_DATA_FILENAME_PATTERN,
         config=RADIATION_DATA_CONFIG,
+        db_path=DATABASE_RAW_PATH,
+        table_prefix=RADIATION_TABLE_PREFIX,
+        output_table_name=RADIATION_CONCATENATED_TABLE_NAME
     )
 
     print("Loading municipality data...")
     mun_df = pd.read_csv(os.path.join(DATA_RAW_DIR, MUNICIPALITY_DATA_FILENAME), sep=",", low_memory=False)
 
     print("Loading weather data...")
-    weather_df = pd.read_csv(os.path.join(DATA_RAW_DIR, WEATHER_DATA_FILENAME), sep=";")
-
+    if USE_OF_A_DATABASE:
+        weather_df = pd.read_sql(f"SELECT * FROM {WEATHER_TABLE_NAME}", get_db_connection(DATABASE_RAW_PATH))
+    else:
+        weather_df = pd.read_csv(os.path.join(DATA_RAW_DIR, WEATHER_DATA_FILENAME), sep=";")
+    
     # Clean data
     print("Cleaning radiation data...")
     radiation_df = clean_radiation_data(radiation_df, RADIATION_DATA_CONFIG)
@@ -61,7 +69,8 @@ def clean_all_data() -> None:
         weather_df=weather_df,
         config_rad=RADIATION_DATA_CONFIG,
         config_weather=WEATHER_DATA_CONFIG,
-        max_distance_m=50000  # 50 km
+        rename_mapping=CLEANED_DATA_CONFIG["rename"],
+        max_distance_m=50000,  # 50 km
     )
 
     # Save cleaned data to CSV file
@@ -73,28 +82,48 @@ def concatenate_radiation_data(
     data_raw_dir: str,
     radiation_data_filename_pattern: str,
     config: Dict[str, Any],
+    db_path: str,
+    table_prefix: str,
+    output_table_name: str
 ) -> pd.DataFrame:
     """
-    Concatenate multiple radiation data CSV files into a single DataFrame.
+    Concatenate multiple radiation data CSV files and SQLite tables into single outputs.
     
     This function uses a generic CSV concatenation utility to merge radiation
-    measurement files from different periods and environments.
-
+    measurement files from different periods and environments, and also consolidates
+    the separate SQLite tables into a single unified table.
+    
     Args:
         data_raw_dir: Directory containing the CSV files.
         radiation_data_filename_pattern: Filename pattern for file search.
         config: Configuration dictionary for radiation data processing.
-
+        db_path: Path to the SQLite database file.
+        table_prefix: Prefix used for radiation tables in the database.
+        output_table_name: Name of the consolidated output table.
+    
     Returns:
         pd.DataFrame: Concatenated DataFrame of radiation data.
     """
     
-    return concatenate_csv_files(
+    # Concatenate CSV files
+    df = concatenate_csv_files(
         data_raw_dir=data_raw_dir,
         filename_pattern=radiation_data_filename_pattern,
         medium_column_name=config["measurement_environment_column"],
         medium_mapping=config["medium"],
     )
+    
+    # Concatenate SQLite tables
+    if USE_OF_A_DATABASE:
+        concatenate_radiation_tables_in_db(
+            db_path=db_path,
+            table_prefix=table_prefix,
+            output_table_name=output_table_name,
+            medium_column_name=config["measurement_environment_column"],
+            medium_mapping=config["medium"]
+        )
+    
+    return df
 
 
 def clean_radiation_data(radiation_df: pd.DataFrame, config: Dict[str, Any]) -> pd.DataFrame:
@@ -277,6 +306,7 @@ def associate_weather_to_radiation(
     weather_df: pd.DataFrame,
     config_rad: Dict[str, Any],
     config_weather: Dict[str, Any],
+    rename_mapping: Dict[str, str],
     max_distance_m: float = 50000
 ) -> pd.DataFrame:
     """
@@ -291,6 +321,7 @@ def associate_weather_to_radiation(
         config_rad: Configuration for radiation data columns.
         config_weather: Configuration for weather data columns.
         max_distance_m: Maximum distance in meters for weather station association (default: 50000).
+        rename_mapping: A dictionary mapping old column names (keys) to new column names (values)
 
     Returns:
         pd.DataFrame: Merged DataFrame containing radiation measurements with associated weather data.
@@ -362,6 +393,9 @@ def associate_weather_to_radiation(
             result_rows.append(result)
 
     result_df = pd.DataFrame(result_rows)
+
+    # Rename columns
+    result_df = result_df.rename(columns=rename_mapping)
 
     print(f"✅ Association completed. Kept: {len(result_df)}/{len(radiation_df)} ({len(result_df)/len(radiation_df):.2%})")
 
