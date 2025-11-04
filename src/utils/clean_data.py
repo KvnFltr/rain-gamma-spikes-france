@@ -400,3 +400,7 @@ def associate_weather_to_radiation(
     print(f"✅ Association completed. Kept: {len(result_df)}/{len(radiation_df)} ({len(result_df)/len(radiation_df):.2%})")
 
     return result_df
+
+
+
+#clean
