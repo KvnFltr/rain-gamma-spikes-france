@@ -28,29 +28,27 @@ def _configure_logging() -> None:
     )
 
 
+def _get_dash_runner(app: object) -> Callable[..., None]:
+    """Return the most appropriate callable to start the Dash application."""
+
+    preferred_runner = getattr(app, "run", None)
+    if callable(preferred_runner):
+        return preferred_runner
+
+    fallback_runner = getattr(app, "run_server", None)
+    if callable(fallback_runner):
+        return fallback_runner
+
+    raise RuntimeError("Dash application exposes neither 'run' nor 'run_server'.")
+
+
 def _run_dashboard(debug: bool = False, host: str = "127.0.0.1", port: int = 8050) -> None:
     """Instantiate and run the Dash dashboard server."""
 
     app = create_app()
+    runner = _get_dash_runner(app)
     _LOGGER.info("Starting Dash server on http://%s:%s", host, port)
-
-    try:
-        runner = getattr(app, "run")
-    except AttributeError:
-        runner = None
-
-    if callable(runner):
-        runner(debug=debug, host=host, port=port)
-        return
-
-    try:
-        legacy_runner = getattr(app, "run_server")
-    except AttributeError as exc:
-        raise RuntimeError(
-            "Dash application exposes neither 'run' nor 'run_server'."
-        ) from exc
-
-    legacy_runner(debug=debug, host=host, port=port)
+    runner(debug=debug, host=host, port=port)
 
 
 def _download_data() -> None:
