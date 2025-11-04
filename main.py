@@ -33,6 +33,25 @@ def _run_dashboard(debug: bool = False, host: str = "127.0.0.1", port: int = 805
 
     app = create_app()
     _LOGGER.info("Starting Dash server on http://%s:%s", host, port)
+
+    try:
+        runner = getattr(app, "run")
+    except AttributeError:
+        runner = None
+
+    if callable(runner):
+        runner(debug=debug, host=host, port=port)
+        return
+
+    try:
+        legacy_runner = getattr(app, "run_server")
+    except AttributeError as exc:
+        raise RuntimeError(
+            "Dash application exposes neither 'run' nor 'run_server'."
+        ) from exc
+
+    legacy_runner(debug=debug, host=host, port=port)
+
     app.run(debug=debug, host=host, port=port)
 
 
