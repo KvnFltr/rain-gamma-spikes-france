@@ -95,4 +95,56 @@ def build_stat_card(title: str, value: str, *, identifier: str) -> html.Div:
     )
 
 
-__all__ = ["build_graph_section", "build_metrics_row", "build_stat_card"]
+## New function added to filter
+def build_filter_bar(stations: list[str], variables: list[str]) -> html.Div:
+    """Build a reusable filter bar with dropdowns."""
+    return html.Div(
+        className="filter-bar",
+        children=[
+            html.Div(
+                [
+                    html.Label("Période :", className="filter-label"),
+                    dcc.Dropdown(
+                        id="filter-period",
+                        options=[
+                            {"label": "7 derniers jours", "value": "7d"},
+                            {"label": "30 derniers jours", "value": "30d"},
+                            {"label": "1 an", "value": "1y"},
+                        ],
+                        value="7d",
+                        clearable=False,
+                        className="filter-dropdown",
+                    ),
+                ],
+                className="filter-item",
+            ),
+            html.Div(
+                [
+                    html.Label("Station :", className="filter-label"),
+                    dcc.Dropdown(
+                        id="filter-station",
+                        options=[{"label": s, "value": s} for s in stations],
+                        value=stations[0] if stations else None,
+                        className="filter-dropdown",
+                    ),
+                ],
+                className="filter-item",
+            ),
+            html.Div(
+                [
+                    html.Label("Variable :", className="filter-label"),
+                    dcc.Dropdown(
+                        id="filter-variable",
+                        options=[{"label": v, "value": v} for v in variables],
+                        value=variables[0] if variables else None,
+                        className="filter-dropdown",
+                    ),
+                ],
+                className="filter-item",
+            ),
+        ],
+    )
+
+
+__all__ = ["build_graph_section", "build_metrics_row", "build_stat_card", "build_filter_bar"]
+
