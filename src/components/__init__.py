@@ -2,6 +2,11 @@
 
 from .component1 import build_metrics_row, build_stat_card
 from .component2 import build_graph_section
+from .histogram import (
+    GammaHistogramConfig,
+    build_gamma_histogram_figure,
+    build_gamma_histogram_graph,
+)
 from .footer import build_footer
 from .header import build_header
 from .navbar import build_navbar
@@ -11,6 +16,9 @@ __all__ = [
     "build_header",
     "build_navbar",
     "build_graph_section",
+    "GammaHistogramConfig",
+    "build_gamma_histogram_figure",
+    "build_gamma_histogram_graph",
     "build_metrics_row",
     "build_stat_card",
 ]
