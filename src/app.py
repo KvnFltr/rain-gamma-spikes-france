@@ -21,6 +21,7 @@ def create_app() -> Dash:
         ],
         className="app-container",
     )
+    home.register_callbacks(app)
     return app
 
 
