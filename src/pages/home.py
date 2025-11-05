@@ -20,6 +20,7 @@ from ..components import (
     build_metrics_row,
     build_navbar,
     build_stat_card,
+    build_rain_vs_radio_section,
 )
 
 DATA_PATH = Path("data/cleaned/cleaneddata.csv")
@@ -372,6 +373,8 @@ def layout() -> html.Div:
         ),
     )
 
+    rain_vs_radio_section = build_rain_vs_radio_section()
+
     return html.Div(
         className="home-page",
         children=[
@@ -387,6 +390,7 @@ def layout() -> html.Div:
                     histogram_section,
                     map_section,
                     time_series_section,
+                    rain_vs_radio_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
                 ],
             ),
@@ -591,6 +595,45 @@ def register_callbacks(app: Dash) -> None:
             legend_text = "Unit: Not specified"
 
         return histogram, html.Span(legend_text, className="graph-section__legend-text")
+
+    @app.callback(
+        Output("rain-radio-graph", "figure"),
+        Input("radiation-data-store", "data"),
+    )
+    def _update_rain_radio_scatter(payload: str | None):
+        df = _deserialize_dataset(payload)
+
+        # Filtrer unité Bq/kg sec
+        df = df[df[UNIT_COLUMN] == "becquerel par kg sec"]
+
+        # Filtrer présence colonnes
+        if df.empty or "Rainfall" not in df or RESULT_COLUMN not in df:
+            return px.scatter(
+                title="Rainfall vs Radioactivity — no data available"
+            )
+
+        # Convertir
+        df["Rainfall"] = pd.to_numeric(df["Rainfall"], errors="coerce")
+        df = df.dropna(subset=["Rainfall", RESULT_COLUMN])
+
+        fig = px.scatter(
+            df,
+            x="Rainfall",
+            y=RESULT_COLUMN,
+            labels={"Rainfall": "Rainfall (mm)", RESULT_COLUMN: "Radioactivity (Bq/kg sec)"},
+            trendline="ols",
+            opacity=0.8,
+            title="Rainfall vs Radioactivity (Bq/kg sec)",
+        )
+
+        fig.update_layout(
+            template="simple_white",
+            paper_bgcolor="rgba(0, 0, 0, 0)",
+            plot_bgcolor="rgba(0, 0, 0, 0)",
+            height=420,
+        )
+
+        return fig
 
 
 __all__ = ["layout", "register_callbacks"]
