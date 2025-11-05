@@ -6,10 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable
 
-<<<<<<< HEAD
 import numpy as np
-=======
->>>>>>> origin/main
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -25,11 +22,8 @@ from ..components import (
     build_stat_card,
 )
 
-<<<<<<< HEAD
 DATA_PATH = Path("data/cleaned/cleaneddata.csv")
-=======
 DATA_PATH = Path("data/cleaned/data.csv")
->>>>>>> origin/main
 DATE_COLUMN = "Date start sampling radioactivity"
 RESULT_COLUMN = "Result radioactivity"
 UNIT_COLUMN = "Unit radioactivity"
@@ -49,15 +43,11 @@ _MEDIUM_LABELS = {
     "AIR AMBIANT": "Air",
 }
 
-<<<<<<< HEAD
 _MEDIUM_COLOR_MAP = {
     "Water": "#5fa8d3",
     "Soil": "#f4a261",
     "Air": "#94c973",
 }
-
-=======
->>>>>>> origin/main
 
 @lru_cache(maxsize=1)
 def _cached_dataset() -> pd.DataFrame:
@@ -194,7 +184,6 @@ def _deserialize_dataset(payload: str | None) -> pd.DataFrame:
     return dataframe
 
 
-<<<<<<< HEAD
 def _compute_bin_count(series: pd.Series) -> int:
     """Determine an appropriate number of histogram bins."""
 
@@ -224,8 +213,6 @@ def _compute_bin_count(series: pd.Series) -> int:
     return int(min(max(bins, 6), 60))
 
 
-=======
->>>>>>> origin/main
 def _format_integer(value: int | float | None) -> str:
     """Format integers with thousands separators for display."""
 
@@ -247,7 +234,6 @@ def _empty_histogram_figure(message: str) -> go.Figure:
 
     fig = go.Figure()
     fig.update_layout(
-<<<<<<< HEAD
         template="simple_white",
         paper_bgcolor="rgba(0, 0, 0, 0)",
         plot_bgcolor="rgba(0, 0, 0, 0)",
@@ -260,7 +246,8 @@ def _empty_histogram_figure(message: str) -> go.Figure:
     )
     fig.update_xaxes(gridcolor="#d7dde8")
     fig.update_yaxes(gridcolor="#d7dde8")
-=======
+
+    fig.update_layout(
         template="plotly_dark",
         paper_bgcolor="rgba(13, 23, 44, 0.0)",
         plot_bgcolor="rgba(13, 23, 44, 0.0)",
@@ -271,21 +258,18 @@ def _empty_histogram_figure(message: str) -> go.Figure:
         font=dict(color="#f8fbff"),
         showlegend=False,
     )
->>>>>>> origin/main
+
     fig.add_annotation(
-        text=message,
-        x=0.5,
-        y=0.5,
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-<<<<<<< HEAD
-        font=dict(size=16, color="#475569"),
-=======
-        font=dict(size=16, color="#a0b4d0"),
->>>>>>> origin/main
+    text=message,
+    x=0.5,
+    y=0.5,
+    xref="paper",
+    yref="paper",
+    showarrow=False,
+    font=dict(size=16, color="#a0b4d0"),
     )
     return fig
+
 
 
 def layout() -> html.Div:
@@ -491,7 +475,6 @@ def register_callbacks(app: Dash) -> None:
             )
 
         color_dimension: str | None = None
-<<<<<<< HEAD
         color_kwargs: dict[str, Any] = {}
         if MEDIUM_COLUMN in filtered and filtered[MEDIUM_COLUMN].nunique() > 1:
             color_dimension = MEDIUM_COLUMN
@@ -506,32 +489,25 @@ def register_callbacks(app: Dash) -> None:
             color_kwargs["color_discrete_sequence"] = px.colors.qualitative.Set2
 
         bin_count = _compute_bin_count(filtered[RESULT_COLUMN])
-=======
         if MEDIUM_COLUMN in filtered and filtered[MEDIUM_COLUMN].nunique() > 1:
             color_dimension = MEDIUM_COLUMN
         elif RADION_COLUMN in filtered and filtered[RADION_COLUMN].nunique() > 1:
             color_dimension = RADION_COLUMN
->>>>>>> origin/main
 
         histogram = px.histogram(
             filtered,
             x=RESULT_COLUMN,
             color=color_dimension,
-<<<<<<< HEAD
-            nbins=bin_count,
-            opacity=0.68,
-=======
-            nbins=40,
+            nbins=bin_count,  # ou remplace par 40 si tu veux forcer
             opacity=0.85,
->>>>>>> origin/main
             labels={
                 RESULT_COLUMN: "Gamma dose result (Bq/kg or Bq/L)",
                 MEDIUM_COLUMN: "Measurement environment",
                 RADION_COLUMN: "Radionuclide",
             },
-<<<<<<< HEAD
             **color_kwargs,
         )
+
         histogram.update_traces(
             marker_line_color="rgba(15, 23, 42, 0.15)",
             marker_line_width=1,
@@ -553,8 +529,9 @@ def register_callbacks(app: Dash) -> None:
                 bgcolor="rgba(255, 255, 255, 0.92)",
                 bordercolor="rgba(15, 23, 42, 0.08)",
                 borderwidth=1,
-=======
+            ),
         )
+
         histogram.update_traces(marker_line_width=0)
         histogram.update_layout(
             template="plotly_dark",
@@ -564,7 +541,6 @@ def register_callbacks(app: Dash) -> None:
             legend=dict(
                 title="" if not color_dimension else "Legend",
                 bgcolor="rgba(15, 23, 42, 0.6)",
->>>>>>> origin/main
                 orientation="h",
                 yanchor="bottom",
                 y=1.02,
@@ -572,7 +548,6 @@ def register_callbacks(app: Dash) -> None:
                 xanchor="left",
                 font=dict(size=12),
             ),
-<<<<<<< HEAD
             margin=dict(l=20, r=20, t=50, b=70),
             height=420,
             font=dict(color="#0f172a"),
@@ -586,7 +561,6 @@ def register_callbacks(app: Dash) -> None:
             title="Number of samples",
             gridcolor="#d7dde8",
             zeroline=False,
-=======
             margin=dict(l=20, r=20, t=40, b=60),
             height=420,
             font=dict(color="#f8fbff"),
@@ -600,7 +574,6 @@ def register_callbacks(app: Dash) -> None:
             title="Frequency",
             gridcolor="rgba(148, 163, 184, 0.2)",
             zerolinecolor="rgba(148, 163, 184, 0.35)",
->>>>>>> origin/main
         )
 
         units = []
