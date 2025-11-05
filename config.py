@@ -12,8 +12,6 @@ DATA_CLEANED_DIR: str = os.path.join(BASE_DATA_DIR, "cleaned")
 
 # Database configuration
 USE_OF_A_DATABASE: bool = False # If we want to store the data in an SQLite database. 
-# Note that importing data into the database can take several tens of minutes for very large dataframes (i.e. the weather file)
-# It is preferable to work directly on the pandas dataframes (it's much quicker).
 DATABASE_RAW_DIR: str = os.path.join(DATA_RAW_DIR, "database")
 DATABASE_RAW_PATH = os.path.join(DATABASE_RAW_DIR, "raw_data.db")
 

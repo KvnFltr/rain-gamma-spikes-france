@@ -46,7 +46,7 @@ def save_csv_to_sqlite(
     db_path: str,
     table_name: str,
     compression: Optional[str] = None,
-    sep: str = ";"
+    sep: str = ";",
 ) -> None:
     """
     Load a CSV file and save it to a SQLite database table.
@@ -61,7 +61,7 @@ def save_csv_to_sqlite(
     print("⏳ Saving to the database...")
     # Read the CSV file
     df = pd.read_csv(csv_path, compression=compression, sep=sep, low_memory=False)
-    
+        
     # Save using the dataframe function
     save_dataframe_to_sqlite(df, db_path, table_name)
 
