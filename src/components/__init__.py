@@ -1,9 +1,10 @@
 """Reusable UI components for the dashboard."""
 
+from .component1 import build_metrics_row, build_stat_card
+from .component2 import build_graph_section
 from .footer import build_footer
 from .header import build_header
 from .navbar import build_navbar
-from .sections import build_graph_section, build_metrics_row, build_stat_card
 
 __all__ = [
     "build_footer",
