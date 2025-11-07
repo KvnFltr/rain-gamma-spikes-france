@@ -344,6 +344,23 @@ def layout() -> html.Div:
             ],
             className="control-group control-group--slider",
         ),
+        html.Div(
+            [
+                html.Label("Scale", className="control-label", htmlFor="hist-scale"),
+                dcc.RadioItems(
+                    id="hist-scale",
+                    options=[
+                        {"label": "Count", "value": "count"},
+                        {"label": "Density", "value": "density"},
+                    ],
+                    value="count",
+                    inline=True,
+                    inputClassName="control-radio-input",
+                    labelClassName="control-radio-label",
+                ),
+            ],
+            className="control-group",
+        ),
     ]
 
     histogram_section = build_graph_section(
