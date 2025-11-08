@@ -271,3 +271,12 @@ def rename_columns(df: pd.DataFrame, old_names: List[str], new_names: List[str])
     df = df.rename(columns=rename_dict)
 
     return df
+
+def delete_files_in_directory(directory_path: str) -> None:
+    import os
+    os.makedirs(directory_path, exist_ok=True)  # <--
+    for item in os.listdir(directory_path):
+        p = os.path.join(directory_path, item)
+        if os.path.isfile(p):
+            os.remove(p)
+    print(f"All files in the directory '{directory_path}' have been deleted.")
