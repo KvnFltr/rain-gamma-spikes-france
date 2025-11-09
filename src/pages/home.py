@@ -452,7 +452,9 @@ def layout() -> html.Div:
                 children=[
                     metrics,
                     histogram_section,
-                    map_section,    
+                    map_section,
+                    commune_corr_section,
+                    commune_mean_section,
                     time_series_section,
                     rain_vs_radio_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
