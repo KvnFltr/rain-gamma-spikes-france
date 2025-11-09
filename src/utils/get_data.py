@@ -5,7 +5,7 @@ from src.utils.utils import *
 from src.utils.playwright_utils import *
 from src.utils.db_utils import *
 import requests 
-form pathlib import Path
+from pathlib import Path
 import os
 
 def get_all_data() -> None:
