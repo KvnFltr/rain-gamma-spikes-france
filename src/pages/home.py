@@ -13,6 +13,10 @@ import plotly.graph_objects as go
 from dash import Dash, Input, Output, dcc, html
 from dash.development.base_component import Component
 
+import json
+import unicodedata
+from pathlib import Path
+
 from ..components import (
     build_footer,
     build_graph_section,
@@ -25,6 +29,9 @@ from ..components import (
 
 DATA_PATH = Path("data/cleaned/cleaneddata.csv")
 DATA_PATH = Path("data/cleaned/data.csv")
+
+GEOJSON_PATH = Path("data/geodata/communes.geojson")
+
 DATE_COLUMN = "Date start sampling radioactivity"
 RESULT_COLUMN = "Result radioactivity"
 UNIT_COLUMN = "Unit radioactivity"
