@@ -4,6 +4,8 @@ from config import *
 from src.utils.utils import *
 from src.utils.playwright_utils import *
 from src.utils.db_utils import *
+import requests 
+form pathlib import Path
 import os
 
 def get_all_data() -> None:
@@ -44,7 +46,20 @@ def get_all_data() -> None:
         db_path=DATABASE_RAW_PATH,
         table_name=MUNICIPALITY_TABLE_NAME
     )
+    get_communes_geojson()
 
+def get_communes_geojson():
+    GEO_DIR = Path("data/geodata")
+    GEO_PATH = GEO_DIR / "communes.geojson"
+    GEO_URL = "https://www.data.gouv.fr/api/1/datasets/r/00c0c560-3ad1-4a62-9a29-c34c98c3701e"
+    GEO_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"Téléchargement du GeoJSON des communes : {GEO_URL}")
+    with requests.get(GEO_URL, stream=True, timeout=120) as r:
+        r.raise_for_status()
+        with open(GEO_PATH, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+    print(f"✓ Fichier GeoJSON enregistré dans {GEO_PATH}")
 
 def get_radiation_data(
     radiation_config: Dict[str, Any],
