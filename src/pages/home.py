@@ -41,6 +41,30 @@ LAT_COLUMN = "Latitude"
 LON_COLUMN = "Longitude"
 MUNICIPALITY_COLUMN = "Municipality name"
 
+def _norm_name(s: str) -> str:
+    """Normalise un nom de commune : accents/majuscules/tirets/espaces."""
+    if not isinstance(s, str):
+        return ""
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    return (
+        s.lower()
+         .replace("-", " ")
+         .replace("’", "'")
+         .replace("`", "'")
+         .strip()
+    )
+
+@lru_cache(maxsize=1)
+def _load_communes_geojson() -> dict:
+    """Charge le GeoJSON des communes et ajoute 'properties.nom_key' normalisé pour la jointure."""
+    with open(GEOJSON_PATH, "r", encoding="utf-8") as f:
+        gj = json.load(f)
+    for feat in gj.get("features", []):
+        props = feat.setdefault("properties", {})
+        nom = props.get("nom", "")
+        props["nom_key"] = _norm_name(nom)
+    return gj
+
 _MEDIUM_LABELS = {
     "Sol": "Soil",
     "sol": "Soil",
