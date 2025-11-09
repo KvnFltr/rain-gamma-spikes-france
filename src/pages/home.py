@@ -421,6 +421,22 @@ def layout() -> html.Div:
         ),
     )
 
+    commune_corr_section = build_graph_section(
+        "commune-corr-map",
+        title="Corrélation pluie ↔ dose gamma (par commune)",
+        description=(
+            "Coefficient de corrélation de Pearson (r) entre la pluie et la dose gamma, "
+            "calculé à partir des mesures disponibles par commune."
+        ),
+    )
+
+    commune_mean_section = build_graph_section(
+        "commune-mean-map",
+        title="Dose gamma moyenne (par commune)",
+        description=("Moyenne des résultats de dose gamma, agrégée au niveau communal."),
+    )
+
+
     rain_vs_radio_section = build_rain_vs_radio_section()
 
     return html.Div(
@@ -436,7 +452,7 @@ def layout() -> html.Div:
                 children=[
                     metrics,
                     histogram_section,
-                    map_section,
+                    map_section,    
                     time_series_section,
                     rain_vs_radio_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
