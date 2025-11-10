@@ -61,7 +61,7 @@ def get_communes_geojson():
 
     GEO_DIR = Path("data/geodata")
     GEO_PATH = GEO_DIR / "communes.geojson"
-    GEO_URL = "https://geo.api.gouv.fr/communes?format=geojson&geometry=contour"
+    GEO_URL = "https://www.data.gouv.fr/api/1/datasets/r/00c0c560-3ad1-4a62-9a29-c34c98c3701e"
 
     GEO_DIR.mkdir(parents=True, exist_ok=True)
 
