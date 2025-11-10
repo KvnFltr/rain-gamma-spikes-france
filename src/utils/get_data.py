@@ -49,17 +49,31 @@ def get_all_data() -> None:
     get_communes_geojson()
 
 def get_communes_geojson():
+    """
+    Télécharge un GeoJSON (et non un TopoJSON) des communes de France
+    et l'enregistre dans data/geodata/communes.geojson.
+
+    Source: API officielle geo.api.gouv.fr (FeatureCollection GeoJSON)
+    -> properties contient au moins: nom, code
+    """
+    import requests
+    from pathlib import Path
+
     GEO_DIR = Path("data/geodata")
     GEO_PATH = GEO_DIR / "communes.geojson"
-    GEO_URL = "https://www.data.gouv.fr/api/1/datasets/r/00c0c560-3ad1-4a62-9a29-c34c98c3701e"
+    GEO_URL = "https://geo.api.gouv.fr/communes?format=geojson&geometry=polygon"
+
     GEO_DIR.mkdir(parents=True, exist_ok=True)
+
     print(f"Téléchargement du GeoJSON des communes : {GEO_URL}")
-    with requests.get(GEO_URL, stream=True, timeout=120) as r:
+    with requests.get(GEO_URL, stream=True, timeout=180) as r:
         r.raise_for_status()
         with open(GEO_PATH, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+            for chunk in r.iter_content(chunk_size=1 << 15):
+                if chunk:
+                    f.write(chunk)
     print(f"✓ Fichier GeoJSON enregistré dans {GEO_PATH}")
+
 
 def get_radiation_data(
     radiation_config: Dict[str, Any],
