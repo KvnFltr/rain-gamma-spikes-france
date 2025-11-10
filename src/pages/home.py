@@ -474,6 +474,7 @@ def register_callbacks(app: Dash) -> None:
         Output("last-update", "children"),
         Input("radiation-data-store", "data"),
     )
+    
     def _update_stat_cards(payload: str | None) -> tuple[list[Component], list[Component], list[Component]]:
         dataset = _deserialize_dataset(payload)
 
@@ -662,6 +663,118 @@ def register_callbacks(app: Dash) -> None:
 
         return histogram, html.Span(legend_text, className="graph-section__legend-text")
 
+
+        @app.callback(
+        Output("commune-corr-map", "figure"),
+        Output("commune-mean-map", "figure"),
+        Input("radionuclide-filter", "value"),
+        Input("medium-filter", "value"),
+        Input("date-range-slider", "value"),
+        Input("radiation-data-store", "data"),
+    )
+    def _update_commune_maps(selected_radionuclides, selected_media, slider_range, payload):
+        import plotly.express as px
+        df = _deserialize_dataset(payload)
+
+        # Garde-fous colonnes
+        needed = {MUNICIPALITY_COLUMN, RESULT_COLUMN, "Rainfall"}
+        if df.empty or not needed.issubset(df.columns):
+            msg = "No commune/rain/dose data to compute the choropleths."
+            return _empty_histogram_figure(msg), _empty_histogram_figure(msg)
+
+        # Copie & filtres (mêmes logiques que l'histogramme)
+        f = df.copy()
+        if selected_radionuclides:
+            f = f[f[RADION_COLUMN].isin(_normalise_selection(selected_radionuclides))]
+        if selected_media:
+            f = f[f[MEDIUM_COLUMN].isin(_normalise_selection(selected_media))]
+        if slider_range and len(slider_range) == 2 and DATE_COLUMN in f:
+            start = pd.to_datetime(slider_range[0], unit="s")
+            end = pd.to_datetime(slider_range[1], unit="s")
+            f = f[f[DATE_COLUMN].between(start, end, inclusive="both")]
+
+        # Types & nettoyage
+        f[RESULT_COLUMN] = pd.to_numeric(f[RESULT_COLUMN], errors="coerce")
+        f["Rainfall"] = pd.to_numeric(f["Rainfall"], errors="coerce")
+        f = f.dropna(subset=[MUNICIPALITY_COLUMN, RESULT_COLUMN, "Rainfall"])
+        if f.empty:
+            msg = "No data left after filtering."
+            return _empty_histogram_figure(msg), _empty_histogram_figure(msg)
+
+        # Clé de jointure par nom normalisé (si tu as le code INSEE, on switchera)
+        f["commune_key"] = f[MUNICIPALITY_COLUMN].astype(str).map(_norm_name)
+
+        # Agrégations par commune
+        def _safe_corr(g: pd.DataFrame) -> float | None:
+            # exige un minimum de points pour éviter les corrélations absurdes
+            if g[RESULT_COLUMN].count() >= 5 and g["Rainfall"].count() >= 5:
+                return float(g[RESULT_COLUMN].corr(g["Rainfall"]))
+            return np.nan
+
+        agg = (
+            f.groupby("commune_key", as_index=False)
+             .agg(
+                 mean_dose=(RESULT_COLUMN, "mean"),
+                 mean_rain=("Rainfall", "mean"),
+                 n_points=(RESULT_COLUMN, "count"),
+                 corr=_safe_corr,
+             )
+        )
+
+        # Charges polygones & prépare bornes de couleurs
+        gj = _load_communes_geojson()
+        if agg["mean_dose"].notna().any():
+            ql, qh = agg["mean_dose"].quantile([0.05, 0.95])
+            mean_color = agg["mean_dose"].clip(ql, qh)
+        else:
+            mean_color = agg["mean_dose"]
+
+        # Choroplèthe corrélation (r ∈ [-1, 1])
+        corr_fig = px.choropleth(
+            agg,
+            geojson=gj,
+            locations="commune_key",
+            featureidkey="properties.nom_key",
+            color="corr",
+            color_continuous_scale=[(0.0, "#4575b4"), (0.5, "#ffffbf"), (1.0, "#d73027")],
+            range_color=(-1, 1),
+            hover_data={"mean_dose":":.3f","mean_rain":":.2f","n_points":True,"corr":":.2f"},
+            labels={"mean_dose":"Mean dose","mean_rain":"Mean rain (mm)"},
+        )
+        corr_fig.update_layout(
+            geo=dict(fitbounds="locations", visible=False),
+            margin=dict(l=10, r=10, t=40, b=10),
+            paper_bgcolor="rgba(13, 23, 44, 0.0)",
+            plot_bgcolor="rgba(13, 23, 44, 0.0)",
+            template="plotly_dark",
+            coloraxis_colorbar=dict(title="r (rain↔dose)"),
+            height=520,
+        )
+
+        # Choroplèthe dose moyenne
+        mean_fig = px.choropleth(
+            agg.assign(mean_color=mean_color),
+            geojson=gj,
+            locations="commune_key",
+            featureidkey="properties.nom_key",
+            color="mean_color",
+            color_continuous_scale="Viridis",
+            hover_data={"mean_dose":":.3f","mean_rain":":.2f","n_points":True,"corr":":.2f"},
+            labels={"mean_color":"Mean dose"},
+        )
+        mean_fig.update_layout(
+            geo=dict(fitbounds="locations", visible=False),
+            margin=dict(l=10, r=10, t=40, b=10),
+            paper_bgcolor="rgba(13, 23, 44, 0.0)",
+            plot_bgcolor="rgba(13, 23, 44, 0.0)",
+            template="plotly_dark",
+            coloraxis_colorbar=dict(title="Mean dose"),
+            height=520,
+        )
+
+        return corr_fig, mean_fig
+
+    
     @app.callback(
         Output("rain-radio-graph", "figure"),
         Input("radiation-data-store", "data"),
