@@ -510,12 +510,14 @@ def register_callbacks(app: Dash) -> None:
         Input("radionuclide-filter", "value"),
         Input("medium-filter", "value"),
         Input("date-range-slider", "value"),
+        Input("hist-scale", "value"),
         Input("radiation-data-store", "data"),
     )
     def _update_histogram(
         selected_radionuclides: Iterable[str] | None,
         selected_media: Iterable[str] | None,
         slider_range: list[int] | None,
+        hist_scale,
         payload: str | None,
     ) -> tuple[go.Figure, Component]:
         dataset = _deserialize_dataset(payload)
@@ -671,13 +673,9 @@ def register_callbacks(app: Dash) -> None:
         Input("date-range-slider", "value"),
         Input("radiation-data-store", "data"),
     )
-        def _update_commune_maps(selected_radionuclides, selected_media, slider_range, payload):
-
-        # Garde-fous colonnes
-            needed = {MUNICIPALITY_COLUMN, RESULT_COLUMN, "Rainfall"}
-            if df.empty or not needed.issubset(df.columns):
-                msg = "No commune/rain/dose data to compute the choropleths."
-                return _empty_histogram_figure(msg), _empty_histogram_figure(msg)
+    def _update_commune_maps(selected_radionuclides, selected_media, slider_range, payload):
+        import plotly.express as px
+        df = _deserialize_dataset(payload)
 
         # Garde-fous colonnes
         needed = {MUNICIPALITY_COLUMN, RESULT_COLUMN, "Rainfall"}
@@ -815,6 +813,49 @@ def register_callbacks(app: Dash) -> None:
             height=420,
         )
 
+        return fig
+    
+    @app.callback(
+        Output("radiation-map", "figure"),
+        Input("radiation-data-store", "data"),
+    )
+    def _update_radiation_map(payload):
+        df = _deserialize_dataset(payload)
+        
+        if df.empty or LAT_COLUMN not in df or LON_COLUMN not in df:
+            return _empty_histogram_figure("No geolocation data available")
+        
+        df = df.dropna(subset=[LAT_COLUMN, LON_COLUMN])
+        
+        fig = px.scatter_mapbox(
+            df,
+            lat=LAT_COLUMN,
+            lon=LON_COLUMN,
+            hover_data=[MUNICIPALITY_COLUMN, RESULT_COLUMN],
+            zoom=5,
+        )
+        
+        fig.update_layout(
+            mapbox_style="open-street-map",
+            height=500,
+            margin=dict(l=0, r=0, t=0, b=0),
+        )
+        
+        return fig
+
+    @app.callback(
+        Output("rainfall-timeseries", "figure"),
+        Input("radiation-data-store", "data"),
+    )
+    def _update_timeseries(payload):
+        df = _deserialize_dataset(payload)
+        
+        if df.empty or "Rainfall" not in df or DATE_COLUMN not in df:
+            return _empty_histogram_figure("No time series data available")
+        
+        # Créer votre série temporelle ici
+        fig = px.line(df, x=DATE_COLUMN, y=["Rainfall", RESULT_COLUMN])
+        
         return fig
 
 
