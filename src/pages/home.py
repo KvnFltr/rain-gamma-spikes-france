@@ -671,9 +671,13 @@ def register_callbacks(app: Dash) -> None:
         Input("date-range-slider", "value"),
         Input("radiation-data-store", "data"),
     )
-    def _update_commune_maps(selected_radionuclides, selected_media, slider_range, payload):
-        import plotly.express as px
-        df = _deserialize_dataset(payload)
+        def _update_commune_maps(selected_radionuclides, selected_media, slider_range, payload):
+
+        # Garde-fous colonnes
+            needed = {MUNICIPALITY_COLUMN, RESULT_COLUMN, "Rainfall"}
+            if df.empty or not needed.issubset(df.columns):
+                msg = "No commune/rain/dose data to compute the choropleths."
+                return _empty_histogram_figure(msg), _empty_histogram_figure(msg)
 
         # Garde-fous colonnes
         needed = {MUNICIPALITY_COLUMN, RESULT_COLUMN, "Rainfall"}
