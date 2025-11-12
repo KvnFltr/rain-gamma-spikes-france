@@ -27,7 +27,6 @@ from ..components import (
     build_rain_vs_radio_section,
 )
 
-DATA_PATH = Path("data/cleaned/cleaneddata.csv")
 DATA_PATH = Path("data/cleaned/data.csv")
 
 GEOJSON_PATH = Path("data/geodata/communes.geojson")
@@ -664,7 +663,7 @@ def register_callbacks(app: Dash) -> None:
         return histogram, html.Span(legend_text, className="graph-section__legend-text")
 
 
-        @app.callback(
+    @app.callback(
         Output("commune-corr-map", "figure"),
         Output("commune-mean-map", "figure"),
         Input("radionuclide-filter", "value"),
