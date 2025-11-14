@@ -69,15 +69,11 @@ _MEDIUM_LABELS = {
     "sol": "Soil",
     "Eau": "Water",
     "eau": "Water",
-    "AIR": "Air",
-    "Air": "Air",
-    "AIR AMBIANT": "Air",
 }
 
 _MEDIUM_COLOR_MAP = {
     "Water": "#5fa8d3",
     "Soil": "#f4a261",
-    "Air": "#94c973",
 }
 
 @lru_cache(maxsize=1)
@@ -443,7 +439,7 @@ def layout() -> html.Div:
         children=[
             build_header(
                 "Rain & Dust Spikes",
-                "Why does the gamma dose rise after rainfall?",
+                "Does the gamma dose rise after rainfall?",
             ),
             build_navbar(),
             html.Main(
@@ -702,8 +698,8 @@ def register_callbacks(app: Dash) -> None:
             msg = "No data left after filtering."
             return _empty_histogram_figure(msg), _empty_histogram_figure(msg)
 
-        # Clé de jointure par nom normalisé (si tu as le code INSEE, on switchera)
-        f["commune_key"] = f[MUNICIPALITY_COLUMN].astype(str).map(_norm_name)
+        # Clé de jointure par nom normalisé
+        f["Municipality name"] = f[MUNICIPALITY_COLUMN].astype(str).map(_norm_name)
 
         # Agrégations par commune
         def _safe_corr(g: pd.DataFrame) -> float | None:
@@ -713,7 +709,7 @@ def register_callbacks(app: Dash) -> None:
             return np.nan
 
         agg = (
-            f.groupby("commune_key", as_index=False)
+            f.groupby("Result radioactivity", as_index=False)
              .agg(
                  mean_dose=(RESULT_COLUMN, "mean"),
                  mean_rain=("Rainfall", "mean"),

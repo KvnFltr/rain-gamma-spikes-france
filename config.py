@@ -1,5 +1,7 @@
 from typing import Dict
 import os
+from pathlib import Path
+
 # API URLs
 ASNR_RADIATION_URL: str = "https://mesure-radioactivite.fr/#/expert"
 METEOFRANCE_WEATHER_DOWNLOAD_URL: str = "https://www.data.gouv.fr/api/1/datasets/r/92065ec0-ea6f-4f5e-8827-4344179c0a7f"
@@ -194,4 +196,32 @@ CLEANED_DATA_CONFIG: Dict[str, Dict[str, str]] = {
         "PRELIQ": "Rainfall",
         "DISTANCE_RADIATION_WEATHER_M": "Distance measurement weather and radiation m"
     }
+}
+
+
+### For dashboard :
+
+DATA_PATH = Path("data/cleaned/data.csv")
+GEOJSON_PATH = Path("data/geodata/communes.geojson")
+
+DATE_COLUMN = "Date start sampling radioactivity"
+RESULT_COLUMN = "Result radioactivity"
+UNIT_COLUMN = "Unit radioactivity"
+RADION_COLUMN = "Radionuclide"
+MEDIUM_COLUMN = "Measurement environment"
+LAT_COLUMN = "Latitude"
+LON_COLUMN = "Longitude"
+MUNICIPALITY_COLUMN = "Municipality name"
+
+
+MEDIUM_LABELS = {
+    "Sol": "Soil",
+    "sol": "Soil",
+    "Eau": "Water",
+    "eau": "Water",
+}
+
+MEDIUM_COLOR_MAP = {
+    "Water": "#5fa8d3",
+    "Soil": "#f4a261",
 }
