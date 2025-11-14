@@ -13,7 +13,7 @@ import logging
 import inspect
 from typing import Callable
 
-from src.app import create_app
+from src.dashboard.app import create_app
 from src.utils.clean_data import clean_all_data
 from src.utils.get_data import get_all_data
 
