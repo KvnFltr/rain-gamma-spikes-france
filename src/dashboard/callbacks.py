@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, html
 from dash.development.base_component import Component
-
+from typing import Iterable
 
 from config import (
     DATE_COLUMN, 
@@ -15,12 +15,15 @@ from config import (
     LAT_COLUMN,
     LON_COLUMN, 
     MUNICIPALITY_COLUMN, 
-    RAINFALL_COLUMN
+    RAINFALL_COLUMN,
+    RADION_COLUMN,
+    MEDIUM_COLUMN,
 )
 from .utils import (
     deserialize_dataset, 
     format_integer, 
-    format_date, 
+    format_date,
+    normalize_selection,
 )
 
 def _rain_bin(mm: float) -> str:
@@ -579,122 +582,6 @@ def register_all_callbacks(app: Dash) -> None:
             font=dict(size=12, color="rgba(200,210,225,0.9)"),
         )
         return fig
-
-        
-                # --- Boxplot : jours secs vs jours pluvieux ---
-        @app.callback(
-            Output("drywet-boxplot", "figure"),
-            Input("radiation-data-store", "data"),
-            Input("radionuclide-filter", "value"),
-            Input("medium-filter", "value"),
-            Input("date-range-slider", "value"),
-            Input("unit-filter", "value"),     # même contrôle que ton boxplot par classes
-            Input("box-y-scale", "value"),     # idem
-        )
-        def update_drywet_boxplot(
-            payload: str | None,
-            selected_radionuclides: Iterable[str] | None,
-            selected_media: Iterable[str] | None,
-            slider_range: list[int] | None,
-            unit_value: str | None,
-            y_scale: str | None,
-        ) -> go.Figure:
-            df = deserialize_dataset(payload)
-            needed = {RESULT_COLUMN, "Rainfall"}
-            if df.empty or not needed.issubset(df.columns):
-                return _empty_boxplot("No radioactivity/rainfall data available.")
-
-            # Typage + nettoyage minimal (pas de capping/winsorisation)
-            f = df.copy()
-            f[RESULT_COLUMN] = pd.to_numeric(f[RESULT_COLUMN], errors="coerce")
-            f["Rainfall"] = pd.to_numeric(f["Rainfall"], errors="coerce")
-            if DATE_COLUMN in f:
-                f[DATE_COLUMN] = pd.to_datetime(f[DATE_COLUMN], errors="coerce")
-
-            # Filtres globaux (mêmes que le reste du dashboard)
-            if selected_radionuclides:
-                f = f[f[RADION_COLUMN].isin(normalize_selection(selected_radionuclides))]
-            if selected_media:
-                f = f[f[MEDIUM_COLUMN].isin(normalize_selection(selected_media))]
-            if slider_range and len(slider_range) == 2 and DATE_COLUMN in f:
-                start = pd.to_datetime(slider_range[0], unit="s")
-                end = pd.to_datetime(slider_range[1], unit="s")
-                f = f[f[DATE_COLUMN].between(start, end, inclusive="both")]
-
-            # Filtre d’unité (sol/eau) si choisi
-            if unit_value and unit_value != "__all__" and UNIT_COLUMN in f:
-                f = f[f[UNIT_COLUMN] == unit_value]
-
-            f = f.dropna(subset=[RESULT_COLUMN, "Rainfall"])
-            if f.empty:
-                return _empty_boxplot("No data matches the current filters.")
-
-            # Binarisation pluie : <0.1 mm = sec, sinon pluvieux
-            f["Dry/Rainy"] = np.where(f["Rainfall"] < 0.1, "Dry (<0.1 mm)", "Rainy (≥0.1 mm)")
-            order_bins = ["Dry (<0.1 mm)", "Rainy (≥0.1 mm)"]
-
-            # Compter n par catégorie pour l’axe X
-            counts = f.groupby("Dry/Rainy", as_index=True)[RESULT_COLUMN].size()
-            xticks = [f"{c} (n={int(counts.get(c, 0))})" for c in order_bins]
-
-            # Libellé Y
-            y_label = _y_axis_label([unit_value] if unit_value and unit_value != "__all__" else [])
-
-            # Boxplot « pur » (whiskers Tukey, outliers visibles) + moyenne en triangle
-            fig = px.box(
-                f,
-                x="Dry/Rainy",
-                y=RESULT_COLUMN,
-                category_orders={"Dry/Rainy": order_bins},
-                points="outliers",
-                labels={"Dry/Rainy": "Day type", RESULT_COLUMN: y_label},
-                title="Radioactivity — dry vs rainy days",
-            )
-            fig.update_traces(boxmean=True, marker=dict(opacity=0.45, size=3), line_width=1.2)
-
-            means = f.groupby("Dry/Rainy", as_index=False)[RESULT_COLUMN].mean().reindex(order_bins)
-            fig.add_trace(
-                go.Scatter(
-                    x=order_bins,
-                    y=means[RESULT_COLUMN],
-                    mode="markers",
-                    name="",
-                    showlegend=False,
-                    marker_symbol="triangle-up",
-                    marker_size=10,
-                    marker_line_width=1,
-                )
-            )
-
-            # Style identique à ton boxplot par classes + échelle Y sélectionnable
-            fig.update_layout(
-                template="plotly_dark",
-                paper_bgcolor="rgba(13, 23, 44, 0.0)",
-                plot_bgcolor="rgba(13, 23, 44, 0.0)",
-                margin=dict(l=20, r=20, t=60, b=70),
-                height=450,
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, xanchor="left"),
-            )
-            fig.update_xaxes(
-                title="Day type",
-                tickmode="array", tickvals=order_bins, ticktext=xticks,
-                gridcolor="rgba(148,163,184,0.10)",
-            )
-            fig.update_yaxes(
-                title=y_label,
-                type=(y_scale or "linear"),
-                gridcolor="rgba(148,163,184,0.20)",
-                rangemode="tozero",
-            )
-
-            unit_sub = unit_value if unit_value and unit_value != "__all__" else "mixed"
-            fig.add_annotation(
-                text=f"Unit: {unit_sub} • scale: {y_scale or 'linear'}",
-                xref="paper", yref="paper", x=0, y=1.08,
-                showarrow=False, font=dict(size=12, color="rgba(200,210,225,0.9)")
-            )
-
-            return fig
 
 def _y_axis_label(units: list[str]) -> str:
     # Choisit une étiquette simple et cohérente selon l’unité présente

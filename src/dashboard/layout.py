@@ -13,12 +13,10 @@ from ..components import (
     build_stat_card,
     build_rainfall_histogram_section,
     build_graph_section,
-    build_daily_measurements_section
+    build_daily_measurements_section,
     build_rainfall_boxplot_section,
     build_rainfall_scatter_section,
-    build_drywet_boxplot_section,
 )
-
 
 def build_layout() -> html.Div:
     """Return the main dashboard layout."""
@@ -35,7 +33,8 @@ def build_layout() -> html.Div:
     map_section = _build_map_section(year_options, month_options)
     rainfall_hist_section = build_rainfall_histogram_section()
     daily_measurements_section = build_daily_measurements_section()
-    
+    rainfall_boxplot_section = build_rainfall_boxplot_section()
+    rainfall_scatter_section = build_rainfall_scatter_section()
     # Assemble the full layout
     return html.Div(
         className="home-page",
@@ -51,7 +50,8 @@ def build_layout() -> html.Div:
                     metrics,
                     rainfall_hist_section,
                     map_section,
-                    
+                    rainfall_boxplot_section,
+                    rainfall_scatter_section,
                     daily_measurements_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
                 ],
@@ -157,30 +157,6 @@ def _build_metrics_section(dataset: pd.DataFrame | None) -> html.Div:
             build_stat_card("Measurements analysed", "—", identifier="measurements-count"),
             build_stat_card("Latest measurement", "—", identifier="last-update"),
         ]
-    )
-
-
-def _build_histogram_section(
-    radionuclide_options: list[dict[str, str]],
-    medium_options: list[dict[str, str]],
-    slider_config: dict[str, Any] | None,
-) -> html.Div:
-    """Build the histogram section with controls."""
-    histogram_controls = _build_histogram_controls(
-        radionuclide_options,
-        medium_options,
-        slider_config,
-    )
-
-    return build_graph_section(
-        "radiation-histogram",
-        title="Gamma dose distribution",
-        description=(
-            "Explore how gamma dose results are distributed and compare collection media "
-            "or radionuclides using the interactive controls."
-        ),
-        controls=histogram_controls,
-        footer=html.Span("Unit: —", id="histogram-unit-legend", className="graph-section__legend-text"),
     )
 
 
