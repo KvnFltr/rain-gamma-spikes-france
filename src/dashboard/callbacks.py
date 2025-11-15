@@ -243,6 +243,10 @@ def register_all_callbacks(app: Dash) -> None:
         Output("radiation-map", "figure"),
         Input("radiation-data-store", "data"),
     )
+    @app.callback(
+        Output("radiation-map", "figure"),
+        Input("radiation-data-store", "data"),
+    )
     def update_radiation_map(payload: str | None) -> go.Figure:
         """Update the geographic map of monitoring stations with colour-coded radiation."""
         df = deserialize_dataset(payload)
@@ -263,9 +267,11 @@ def register_all_callbacks(app: Dash) -> None:
             if has_result:
                 df = df.copy()
                 df[RESULT_COLUMN] = pd.to_numeric(df[RESULT_COLUMN], errors="coerce")
-
+                
+                #colaration si on a u min de valeurs numériques
                 if df[RESULT_COLUMN].dropna().shape[0] >= 2:
                     vals = df[RESULT_COLUMN]
+                    
                     # limiter l’influence des valeurs extrêmes
                     q_low, q_high = vals.quantile([0.05, 0.95])
                     if (
@@ -301,6 +307,7 @@ def register_all_callbacks(app: Dash) -> None:
                     zoom=5,
                 )
             else:
+                #si pas de dose exploitable, points bleus classiques
                 fig = px.scatter_mapbox(
                     df,
                     lat=LAT_COLUMN,
@@ -319,21 +326,17 @@ def register_all_callbacks(app: Dash) -> None:
             # Barre de couleur à gauche si on a une coloraxis
             if has_result and color_col is not None and "coloraxis" in fig.layout:
                 fig.update_layout(
-                    coloraxis=dict(
-                        colorbar=dict(
-                            title="Gamma dose",
-                            titleside="top",
-                            x=0.02,      # collé au bord gauche
-                            xanchor="left",
-                            y=0.5,
-                            yanchor="middle",
-                            len=0.7,
-                            thickness=12,
-                            bgcolor="rgba(15, 23, 42, 0.7)",  # fond semi-transp.
-                            outlinewidth=0,
-                            tickfont=dict(color="#e5e7eb"),
-                            titlefont=dict(color="#e5e7eb"),
-                        )
+                    coloraxis_colorbar=dict(
+                        title="Gamma dose",
+                        x=0.02,      # collé au bord gauche
+                        xanchor="left",
+                        y=0.5,
+                        yanchor="middle",
+                        len=0.7,
+                        thickness=12,
+                        bgcolor="rgba(15, 23, 42, 0.7)",  # fond semi-transp.
+                        outlinewidth=0,
+                        
                     )
                 )
 
@@ -347,7 +350,9 @@ def register_all_callbacks(app: Dash) -> None:
                 df,
                 lat=LAT_COLUMN,
                 lon=LON_COLUMN,
-                hover_data=[MUNICIPALITY_COLUMN, RESULT_COLUMN],
+                hover_data=[MUNICIPALITY_COLUMN, RESULT_COLUMN]
+                if MUNICIPALITY_COLUMN in df and RESULT_COLUMN in df
+                else None,
                 zoom=5,
             )
             simple_fig.update_layout(
