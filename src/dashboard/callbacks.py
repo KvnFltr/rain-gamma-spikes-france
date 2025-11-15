@@ -323,7 +323,10 @@ def register_all_callbacks(app: Dash) -> None:
             if has_result and color_col is not None and "coloraxis" in fig.layout:
                 fig.update_layout(
                     coloraxis_colorbar=dict(
-                        title="Gamma dose",
+                        title=dict( 
+                            text="Gamma dose",
+                            font=dict(color="white"),
+                        ),
                         x=0.02,      # collé au bord gauche
                         xanchor="left",
                         y=0.5,
