@@ -327,6 +327,9 @@ def register_all_callbacks(app: Dash) -> None:
                             text="Gamma dose",
                             font=dict(color="white"),
                         ),
+                         tickfont=dict(
+                            color="white",
+                            ),
                         x=0.02,      # collé au bord gauche
                         xanchor="left",
                         y=0.5,
