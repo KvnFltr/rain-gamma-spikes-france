@@ -243,15 +243,11 @@ def register_all_callbacks(app: Dash) -> None:
         Output("radiation-map", "figure"),
         Input("radiation-data-store", "data"),
     )
-    @app.callback(
-        Output("radiation-map", "figure"),
-        Input("radiation-data-store", "data"),
-    )
     def update_radiation_map(payload: str | None) -> go.Figure:
         """Update the geographic map of monitoring stations with colour-coded radiation."""
         df = deserialize_dataset(payload)
 
-        # 1) Vérifications de base : vérification si coord
+        # Vérifications de base : vérification si coord
         if df.empty or LAT_COLUMN not in df or LON_COLUMN not in df:
             return _empty_histogram_figure("No geolocation data available")
 
@@ -259,7 +255,7 @@ def register_all_callbacks(app: Dash) -> None:
         if df.empty:
             return _empty_histogram_figure("No geolocated radiation data available")
 
-        # 2) Essai des pts colorés + barre indicative
+        # Essai des pts colorés + barre indicative
         try:
             has_result = RESULT_COLUMN in df
             color_col = None
