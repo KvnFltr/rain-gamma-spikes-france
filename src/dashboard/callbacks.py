@@ -433,7 +433,7 @@ def register_all_callbacks(app: Dash) -> None:
         Output("radiation-map", "figure"),
         Input("radiation-data-store", "data"),
     )
-def update_radiation_map(payload: str | None) -> go.Figure:
+    def update_radiation_map(payload: str | None) -> go.Figure:
         """Update the geographic map of monitoring stations with colour-coded radiation."""
         df = deserialize_dataset(payload)
 
