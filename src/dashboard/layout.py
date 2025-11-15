@@ -14,6 +14,9 @@ from ..components import (
     build_rainfall_histogram_section,
     build_graph_section,
     build_daily_measurements_section
+    build_rainfall_boxplot_section,
+    build_rainfall_scatter_section,
+    build_drywet_boxplot_section,
 )
 
 
@@ -32,6 +35,7 @@ def build_layout() -> html.Div:
     map_section = _build_map_section(year_options, month_options)
     rainfall_hist_section = build_rainfall_histogram_section()
     daily_measurements_section = build_daily_measurements_section()
+    
     # Assemble the full layout
     return html.Div(
         className="home-page",
@@ -47,6 +51,7 @@ def build_layout() -> html.Div:
                     metrics,
                     rainfall_hist_section,
                     map_section,
+                    
                     daily_measurements_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
                 ],
