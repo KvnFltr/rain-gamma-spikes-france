@@ -30,7 +30,6 @@ def build_layout() -> html.Div:
     # Build sections
     metrics = _build_metrics_section(dataset)
     map_section = _build_map_section(year_options, month_options)
-    time_series_section = _build_time_series_section()
     rainfall_hist_section = build_rainfall_histogram_section()
     daily_measurements_section = build_daily_measurements_section()
     # Assemble the full layout
@@ -143,88 +142,6 @@ def _build_month_options() -> list[dict[str, Any]]:
         (12, "December"),
     ]
     return [{"label": name, "value": m} for (m, name) in months]
-
-
-# Not used anymore
-def _build_histogram_controls(
-    radionuclide_options: list[dict[str, str]],
-    medium_options: list[dict[str, str]],
-    slider_config: dict[str, Any] | None,
-) -> list:
-    """Build control elements for the histogram section."""
-    slider_defaults = slider_config or {"min": 0, "max": 0, "value": [0, 0], "marks": {}}
-
-    return [
-        html.Div(
-            [
-                html.Label("Radionuclide", className="control-label", htmlFor="radionuclide-filter"),
-                dcc.Dropdown(
-                    id="radionuclide-filter",
-                    options=radionuclide_options,
-                    value=[option["value"] for option in radionuclide_options] if radionuclide_options else None,
-                    multi=True,
-                    placeholder="Select radionuclides",
-                    clearable=False,
-                    persistence=True,
-                    persistence_type="session",
-                    className="control-input",
-                    disabled=not radionuclide_options,
-                ),
-            ],
-            className="control-group",
-        ),
-        html.Div(
-            [
-                html.Label("Measurement environment", className="control-label", htmlFor="medium-filter"),
-                dcc.Dropdown(
-                    id="medium-filter",
-                    options=medium_options,
-                    value=[option["value"] for option in medium_options] if medium_options else None,
-                    multi=True,
-                    placeholder="Select media",
-                    clearable=False,
-                    persistence=True,
-                    persistence_type="session",
-                    className="control-input",
-                    disabled=not medium_options,
-                ),
-            ],
-            className="control-group",
-        ),
-        html.Div(
-            [
-                html.Label("Sampling period", className="control-label", htmlFor="date-range-slider"),
-                dcc.RangeSlider(
-                    id="date-range-slider",
-                    allowCross=False,
-                    tooltip={"placement": "bottom", "always_visible": False},
-                    updatemode="mouseup",
-                    step=86_400,
-                    disabled=slider_config is None,
-                    className="control-input control-input--slider",
-                    **slider_defaults,
-                ),
-            ],
-            className="control-group control-group--slider",
-        ),
-        html.Div(
-            [
-                html.Label("Scale", className="control-label", htmlFor="hist-scale"),
-                dcc.RadioItems(
-                    id="hist-scale",
-                    options=[
-                        {"label": "Count", "value": "count"},
-                        {"label": "Density", "value": "density"},
-                    ],
-                    value="count",
-                    inline=True,
-                    inputClassName="control-radio-input",
-                    labelClassName="control-radio-label",
-                ),
-            ],
-            className="control-group",
-        ),
-    ]
 
 
 def _build_metrics_section(dataset: pd.DataFrame | None) -> html.Div:
