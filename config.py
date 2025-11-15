@@ -200,11 +200,14 @@ CLEANED_DATA_CONFIG: Dict[str, Dict[str, str]] = {
 }
 
 
-### For dashboard :
-
-DATA_PATH = Path("data/cleaned/data.csv")
+# Geo data config
+GEO_DIR = Path("data/geodata")
+GEO_PATH = GEO_DIR / "communes.geojson"
+GEO_URL = "https://www.data.gouv.fr/api/1/datasets/r/00c0c560-3ad1-4a62-9a29-c34c98c3701e"
 GEOJSON_PATH = Path("data/geodata/communes.geojson")
 
+### For the dashboard
+DATA_PATH = Path("data/cleaned/data.csv")
 DATE_COLUMN = "Date start sampling radioactivity"
 RESULT_COLUMN = "Result radioactivity"
 UNIT_COLUMN = "Unit radioactivity"
@@ -213,7 +216,7 @@ MEDIUM_COLUMN = "Measurement environment"
 LAT_COLUMN = "Latitude"
 LON_COLUMN = "Longitude"
 MUNICIPALITY_COLUMN = "Municipality name"
-
+RAINFALL_COLUMN = "Rainfall"
 
 MEDIUM_LABELS = {
     "Sol": "Soil",

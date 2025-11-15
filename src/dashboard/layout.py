@@ -4,20 +4,53 @@ import pandas as pd
 from dash import dcc, html
 from typing import Any
 from .utils import serialize_dataset, get_dataset
+from config import DATE_COLUMN
 from ..components import (
     build_header,
     build_navbar,
     build_footer,
     build_metrics_row,
     build_stat_card,
-    build_graph_section,
-    build_rain_vs_radio_section,
-    build_daily_measurements_section,
     build_rainfall_histogram_section,
+    build_graph_section
 )
-from config import RADION_COLUMN, MEDIUM_COLUMN, DATE_COLUMN
 
 
+def build_layout() -> html.Div:
+    """Return the main dashboard layout."""
+    # Load data and prepare options
+    dataset = get_dataset()
+    store_payload = serialize_dataset(dataset)
+
+    # Build sections
+    metrics = _build_metrics_section(dataset)
+
+    map_section = _build_map_section()
+    time_series_section = _build_time_series_section()
+    rainfall_hist_section = build_rainfall_histogram_section()
+
+    # Assemble the full layout
+    return html.Div(
+        className="home-page",
+        children=[
+            build_header(
+                "Rain & Dust Spikes",
+                "Does the gamma dose rise after rainfall?",
+            ),
+            build_navbar(),
+            html.Main(
+                className="home-page__content",
+                children=[
+                    metrics,
+                    rainfall_hist_section,
+                    map_section,
+                    time_series_section,
+                    dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
+                ],
+            ),
+            build_footer(),
+        ],
+    )
 
 
 def _build_dropdown_options(dataset: pd.DataFrame | None, column: str) -> list[dict[str, str]]:
@@ -209,86 +242,6 @@ def _build_time_series_section() -> html.Div:
         description=(
             "A combined time-series view to correlate rainfall intensity with gamma dose variations over time."
         ),
-    )
-
-
-def _build_commune_correlation_section() -> html.Div:
-    """Build the commune correlation map section."""
-    return build_graph_section(
-        "commune-corr-map",
-        title="Corrélation pluie ↔ dose gamma (par commune)",
-        description=(
-            "Coefficient de corrélation de Pearson (r) entre la pluie et la dose gamma, "
-            "calculé à partir des mesures disponibles par commune."
-        ),
-    )
-
-
-def _build_commune_mean_section() -> html.Div:
-    """Build the commune mean dose map section."""
-    return build_graph_section(
-        "commune-mean-map",
-        title="Dose gamma moyenne (par commune)",
-        description=("Moyenne des résultats de dose gamma, agrégée au niveau communal."),
-    )
-
-
-def _build_rain_vs_radio_section() -> html.Div:
-    """Build the rain vs radioactivity scatter section."""
-    return build_rain_vs_radio_section()
-
-
-def build_layout() -> html.Div:
-    """Return the main dashboard layout."""
-    # Charger les données et préparer les options
-    dataset = get_dataset()
-    radionuclide_options = _build_dropdown_options(dataset, RADION_COLUMN)
-    medium_options = _build_dropdown_options(dataset, MEDIUM_COLUMN)
-    slider_config = _build_date_slider_config(dataset)
-    store_payload = serialize_dataset(dataset)
-
-    # Construire les sections
-    metrics = _build_metrics_section(dataset)
-    histogram_section = _build_histogram_section(
-        radionuclide_options,
-        medium_options,
-        slider_config,
-    )
-    map_section = _build_map_section()
-    time_series_section = _build_time_series_section()
-    commune_corr_section = _build_commune_correlation_section()
-    commune_mean_section = _build_commune_mean_section()
-    rain_vs_radio_section = _build_rain_vs_radio_section()
-    
-    daily_measurements_section = build_daily_measurements_section()
-    rainfall_hist_section = build_rainfall_histogram_section()
-
-    # Assembler le layout complet
-    return html.Div(
-        className="home-page",
-        children=[
-            build_header(
-                "Rain & Dust Spikes",
-                "Does the gamma dose rise after rainfall?",
-            ),
-            build_navbar(),
-            html.Main(
-                className="home-page__content",
-                children=[
-                    metrics,
-                    histogram_section,
-                    rainfall_hist_section,
-                    map_section,
-                    commune_corr_section,
-                    commune_mean_section,
-                    daily_measurements_section,
-                    time_series_section,
-                    rain_vs_radio_section,
-                    dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
-                ],
-            ),
-            build_footer(),
-        ],
     )
 
 
