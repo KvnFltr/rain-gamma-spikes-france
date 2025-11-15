@@ -138,7 +138,8 @@ RADIATION_DATA_CONFIG: Dict[str, Dict] = {
     "latitude_columns": {"cleaned": "latitude"},
     "longitude_columns": {"cleaned": "longitude"},
     "distance_to_nearest_weather_data": "DISTANCE_RADIATION_WEATHER_M",
-    "measurement_environment_column":"Milieu de collecte"
+    "measurement_environment_column":"Milieu de collecte",
+    "radioactivity_values_column":"Résultat"
 }
 
 # Municipality data configuration

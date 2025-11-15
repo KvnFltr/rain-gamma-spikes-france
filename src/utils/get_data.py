@@ -1,12 +1,42 @@
+import os
 from typing import Dict, Any
 from playwright.sync_api import sync_playwright
-from config import *
-from src.utils.utils import *
-from src.utils.playwright_utils import *
-from src.utils.db_utils import *
-import requests 
-from pathlib import Path
-import os
+from config import (
+    DATA_RAW_DIR,
+    DATABASE_RAW_DIR,
+    RADIATION_DATA_CONFIG,
+    ASNR_RADIATION_URL,
+    INITIAL_TIMEOUT,
+    DATABASE_RAW_PATH,
+    RADIATION_TABLE_PREFIX,
+    WEATHER_DATA_FILENAME_GZ,
+    METEOFRANCE_WEATHER_DOWNLOAD_URL,
+    WEATHER_TABLE_NAME,
+    VILLEDEREVE_MUNICIPALITY_DOWNLOAD_URL,
+    MUNICIPALITY_DATA_FILENAME,
+    MUNICIPALITY_TABLE_NAME,
+    USE_OF_A_DATABASE,
+    get_radiation_data_filename
+
+)
+from src.utils.utils import (
+    delete_files_in_directory,
+    download_file_from_url
+)
+from src.utils.playwright_utils import (
+    install_playwright_browsers,
+    close_modal,
+    select_collection_environment,
+    fill_start_date,
+    fill_end_date,
+    refuse_cookies,
+    click_show_results,
+    click_download_tab,
+    start_downloading_data_playwright
+)
+from src.utils.db_utils import (
+    save_csv_to_sqlite
+)
 
 def get_all_data() -> None:
     """
@@ -235,3 +265,6 @@ def get_municipality_data(
             table_name=table_name,
             sep=","
         )
+
+if __name__ == "__main__":
+    get_all_data()

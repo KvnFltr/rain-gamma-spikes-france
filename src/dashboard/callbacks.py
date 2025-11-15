@@ -392,7 +392,7 @@ def register_all_callbacks(app: Dash) -> None:
         return corr_fig, mean_fig
 
     @app.callback(
-        Output("rain-radio-graph", "figure"),
+        Output("rain-vs-radio", "figure"),
         Input("radiation-data-store", "data"),
     )
     def update_rain_radio_scatter(payload: str | None) -> go.Figure:
@@ -473,6 +473,68 @@ def register_all_callbacks(app: Dash) -> None:
         fig = px.line(df, x=DATE_COLUMN, y=["Rainfall", RESULT_COLUMN])
 
         return fig
+    
+
+    @app.callback(
+        Output("rainfall-histogram", "figure"),
+        Input("radiation-data-store", "data"),
+        Input("medium-filter", "value"),
+    )
+    def update_rainfall_histogram(payload: str | None, medium: str):
+        """Histogram comparing radioactivity distributions, filtered by medium."""
+        
+        df = deserialize_dataset(payload)
+        
+        needed = {RESULT_COLUMN, UNIT_COLUMN, "Rainfall"}
+        if df.empty or not needed.issubset(df.columns):
+            return px.histogram(title="No data available")
+       
+        if medium == "water":
+            df = df[df[UNIT_COLUMN] == "becquerel par litre"]
+        elif medium == "soil":
+            df = df[df[UNIT_COLUMN] == "becquerel par kg sec"]
+
+        df[RESULT_COLUMN] = pd.to_numeric(df[RESULT_COLUMN], errors="coerce")
+        df["Rainfall"] = pd.to_numeric(df["Rainfall"], errors="coerce")
+        df = df.dropna(subset=[RESULT_COLUMN, "Rainfall"])
+
+        if df.empty:
+            return px.histogram(title="No matching data to display")
+
+        df["Rain category"] = df["Rainfall"].apply(
+            lambda x: "Dry day (<0.1 mm)" if x < 0.1 else "Rainy day (≥0.1 mm)"
+        )
+
+        bins = [0, 0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2, 102.4, 204.8, 409.6, 1000]
+        bin_labels = [f"{bins[i]} - {bins[i+1]}" for i in range(len(bins)-1)]
+        df["Radio_bin"] = pd.cut(df[RESULT_COLUMN], bins=bins, labels=bin_labels, include_lowest=True)
+
+        # Histogram
+        fig = px.histogram(
+            df,
+            x="Radio_bin",
+            color="Rain category",
+            opacity=0.8,
+            barmode='group',
+            histnorm='probability',
+            category_orders={"Radio_bin": bin_labels},
+            labels={
+                "Radio_bin": "Radioactivity (Bq/L)",
+                "Rain category": "Rain category"
+            },
+            title="Radioactivity Distribution on Dry vs Rainy Days"
+        )
+
+        fig.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="rgba(13, 23, 44, 0.0)",
+            plot_bgcolor="rgba(13, 23, 44, 0.0)",
+            margin=dict(l=20, r=20, t=50, b=60),
+            height=450,
+        )
+
+        return fig
+
 
 
 __all__ = ["register_all_callbacks"]

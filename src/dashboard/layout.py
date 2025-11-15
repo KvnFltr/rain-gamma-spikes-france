@@ -2,6 +2,7 @@
 from __future__ import annotations
 import pandas as pd
 from dash import dcc, html
+from typing import Any
 from .utils import serialize_dataset, get_dataset
 from ..components import (
     build_header,
@@ -11,10 +12,12 @@ from ..components import (
     build_stat_card,
     build_graph_section,
     build_rain_vs_radio_section,
+    build_daily_measurements_section,
+    build_rainfall_histogram_section,
 )
 from config import RADION_COLUMN, MEDIUM_COLUMN, DATE_COLUMN
 
-from typing import Any
+
 
 
 def _build_dropdown_options(dataset: pd.DataFrame | None, column: str) -> list[dict[str, str]]:
@@ -256,6 +259,9 @@ def build_layout() -> html.Div:
     commune_corr_section = _build_commune_correlation_section()
     commune_mean_section = _build_commune_mean_section()
     rain_vs_radio_section = _build_rain_vs_radio_section()
+    
+    daily_measurements_section = build_daily_measurements_section()
+    rainfall_hist_section = build_rainfall_histogram_section()
 
     # Assembler le layout complet
     return html.Div(
@@ -271,9 +277,11 @@ def build_layout() -> html.Div:
                 children=[
                     metrics,
                     histogram_section,
+                    rainfall_hist_section,
                     map_section,
                     commune_corr_section,
                     commune_mean_section,
+                    daily_measurements_section,
                     time_series_section,
                     rain_vs_radio_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
