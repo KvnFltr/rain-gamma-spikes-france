@@ -2,8 +2,6 @@
 from __future__ import annotations
 from dash import Input, Output, html
 import plotly.express as px
-from typing import Iterable
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, html
@@ -67,37 +65,162 @@ def register_all_callbacks(app: Dash) -> None:
             _stat_card_children("Measurements analysed", format_integer(measurement_count)),
             _stat_card_children("Latest measurement", format_date(latest_date)),
         )
-
+    
 
     @app.callback(
         Output("radiation-map", "figure"),
         Input("radiation-data-store", "data"),
+        Input("map-year-filter", "value"),
+        Input("map-month-filter", "value"),
     )
-    def update_radiation_map(payload: str | None) -> go.Figure:
-        """Update the geographic map of monitoring stations."""
+    def update_radiation_map(
+        payload: str | None,
+        selected_year: int | None,
+        selected_month: int | None,
+    ) -> go.Figure:
+        """Update the geographic map of monitoring stations with colour-coded radiation + year/month filters."""
         df = deserialize_dataset(payload)
 
+        # --- 1) Filtrage temporel : année / mois (si DATE_COLUMN existe) ---
+        if DATE_COLUMN in df:
+            df = df.copy()
+            df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN], errors="coerce")
+
+            if selected_year is not None:
+                df = df[df[DATE_COLUMN].dt.year == selected_year]
+
+            if selected_month is not None:
+                df = df[df[DATE_COLUMN].dt.month == selected_month]
+
+        # --- 2) Vérifications de base : coordonnées obligatoires ---
         if df.empty or LAT_COLUMN not in df or LON_COLUMN not in df:
-            return _empty_histogram_figure("No geolocation data available")
+            return _empty_histogram_figure("No geolocation data available for this period")
 
         df = df.dropna(subset=[LAT_COLUMN, LON_COLUMN])
+        if df.empty:
+            return _empty_histogram_figure("No geolocated radiation data available for this period")
 
-        fig = px.scatter_mapbox(
-            df,
-            lat=LAT_COLUMN,
-            lon=LON_COLUMN,
-            hover_data=[MUNICIPALITY_COLUMN, RESULT_COLUMN],
-            zoom=5,
-        )
+        # --- 3) Essai : points colorés + barre indicative ---
+        try:
+            has_result = RESULT_COLUMN in df
+            color_col = None
 
-        fig.update_layout(
-            mapbox_style="open-street-map",
-            height=500,
-            margin=dict(l=0, r=0, t=0, b=0),
-        )
+            if has_result:
+                df = df.copy()
+                df[RESULT_COLUMN] = pd.to_numeric(df[RESULT_COLUMN], errors="coerce")
 
-        return fig
+                # coloration si on a un minimum de valeurs numériques
+                if df[RESULT_COLUMN].dropna().shape[0] >= 2:
+                    vals = df[RESULT_COLUMN]
 
+                    # limiter l’influence des valeurs extrêmes
+                    q_low, q_high = vals.quantile([0.05, 0.95])
+                    if (
+                        pd.notna(q_low)
+                        and pd.notna(q_high)
+                        and q_low != q_high
+                    ):
+                        df["_dose_for_color"] = vals.clip(q_low, q_high)
+                        color_col = "_dose_for_color"
+                    else:
+                        color_col = RESULT_COLUMN
+                else:
+                    has_result = False
+
+            # Hover data
+            hover_data = {}
+            if MUNICIPALITY_COLUMN in df:
+                hover_data[MUNICIPALITY_COLUMN] = True
+            if has_result:
+                hover_data[RESULT_COLUMN] = ":.3f"
+            if not hover_data:
+                hover_data = None
+
+            # Construction de la figure
+            if has_result and color_col is not None:
+                fig = px.scatter_mapbox(
+                    df,
+                    lat=LAT_COLUMN,
+                    lon=LON_COLUMN,
+                    color=color_col,
+                    color_continuous_scale="Turbo",  # bleu -> rouge
+                    hover_data=hover_data,
+                    zoom=5,
+                )
+            else:
+                # si pas de dose exploitable, points bleus classiques
+                fig = px.scatter_mapbox(
+                    df,
+                    lat=LAT_COLUMN,
+                    lon=LON_COLUMN,
+                    hover_data=hover_data,
+                    zoom=5,
+                )
+             # Rendre les points plus lisibles 
+            fig.update_traces(
+                marker=dict(
+                    size=20,      # plus petit que le défaut
+                    opacity=0.7, # superpositions plus visibles
+                )
+            )
+
+
+            # Layout bigger zoom
+            fig.update_layout(
+                mapbox_style="open-street-map",
+                mapbox=dict(
+                    center=dict(lat=46.5, lon=2.5),  # france center
+                    zoom=5.2,  #zoom effect 
+                ),
+                height=800,  # view height
+                margin=dict(l=0, r=0, t=0, b=0),
+            )
+
+
+            # Barre de couleur à gauche si on a une coloraxis
+            if has_result and color_col is not None and "coloraxis" in fig.layout:
+                fig.update_layout(
+                    coloraxis_colorbar=dict(
+                        title=dict(
+                            text="Gamma dose",
+                            font=dict(color="white"),
+                        ),
+                        tickfont=dict(
+                            color="white",
+                        ),
+                        x=0.02,      # collé au bord gauche
+                        xanchor="left",
+                        y=0.5,
+                        yanchor="middle",
+                        len=0.7,
+                        thickness=12,
+                        bgcolor="rgba(15, 23, 42, 0.7)",  # fond semi-transp.
+                        outlinewidth=0,
+                    )
+                )
+
+            return fig
+
+        except Exception as e:
+            # Si quelque chose ne marche pas, on revient à la carte simple de base
+            print(f"Error generating radiation map with color scale: {e}")
+            simple_fig = px.scatter_mapbox(
+                df,
+                lat=LAT_COLUMN,
+                lon=LON_COLUMN,
+                hover_data=[MUNICIPALITY_COLUMN, RESULT_COLUMN]
+                if MUNICIPALITY_COLUMN in df and RESULT_COLUMN in df
+                else None,
+                zoom=5,
+            )
+            simple_fig.update_layout(
+                mapbox_style="open-street-map",
+                height=500,
+                margin=dict(l=0, r=0, t=0, b=0),
+            )
+            return simple_fig
+
+            
     @app.callback(
         Output("daily-measurements-graph", "figure"),
         Input("radiation-data-store", "data"),

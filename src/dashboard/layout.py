@@ -23,10 +23,14 @@ def build_layout() -> html.Div:
     dataset = get_dataset()
     store_payload = serialize_dataset(dataset)
 
+    # NEW: options for year/month filters on the map
+    year_options = _build_year_options(dataset)
+    month_options = _build_month_options()
+
     # Build sections
     metrics = _build_metrics_section(dataset)
-
-    map_section = _build_map_section()
+    map_section = _build_map_section(year_options, month_options)
+    time_series_section = _build_time_series_section()
     rainfall_hist_section = build_rainfall_histogram_section()
     daily_measurements_section = build_daily_measurements_section()
     # Assemble the full layout
@@ -51,6 +55,8 @@ def build_layout() -> html.Div:
             build_footer(),
         ],
     )
+
+
 
 
 def _build_dropdown_options(dataset: pd.DataFrame | None, column: str) -> list[dict[str, str]]:
@@ -105,6 +111,39 @@ def _build_date_slider_config(dataset: pd.DataFrame | None) -> dict[str, Any] | 
         "value": [min_value, max_value],
         "marks": marks,
     }
+def _build_year_options(dataset: pd.DataFrame | None) -> list[dict[str, Any]]:
+    """Build dropdown options for years based on the dataset."""
+    if dataset is None or DATE_COLUMN not in dataset or dataset.empty:
+        return []
+
+    years = (
+        dataset[DATE_COLUMN]
+        .dropna()
+        .dt.year
+        .sort_values()
+        .unique()
+    )
+    return [{"label": str(int(y)), "value": int(y)} for y in years]
+
+
+def _build_month_options() -> list[dict[str, Any]]:
+    """Build dropdown options for months (1–12)."""
+    months = [
+        (1, "January"),
+        (2, "February"),
+        (3, "March"),
+        (4, "April"),
+        (5, "May"),
+        (6, "June"),
+        (7, "July"),
+        (8, "August"),
+        (9, "September"),
+        (10, "October"),
+        (11, "November"),
+        (12, "December"),
+    ]
+    return [{"label": name, "value": m} for (m, name) in months]
+
 
 # Not used anymore
 def _build_histogram_controls(
@@ -198,14 +237,90 @@ def _build_metrics_section(dataset: pd.DataFrame | None) -> html.Div:
         ]
     )
 
-def _build_map_section() -> html.Div:
-    """Build the geographic map section."""
+
+def _build_histogram_section(
+    radionuclide_options: list[dict[str, str]],
+    medium_options: list[dict[str, str]],
+    slider_config: dict[str, Any] | None,
+) -> html.Div:
+    """Build the histogram section with controls."""
+    histogram_controls = _build_histogram_controls(
+        radionuclide_options,
+        medium_options,
+        slider_config,
+    )
+
+    return build_graph_section(
+        "radiation-histogram",
+        title="Gamma dose distribution",
+        description=(
+            "Explore how gamma dose results are distributed and compare collection media "
+            "or radionuclides using the interactive controls."
+        ),
+        controls=histogram_controls,
+        footer=html.Span("Unit: —", id="histogram-unit-legend", className="graph-section__legend-text"),
+    )
+
+
+def _build_map_section(
+    year_options: list[dict[str, Any]],
+    month_options: list[dict[str, Any]],
+) -> html.Div:
+    """Build the geographic map section with year/month filters."""
+
+    map_controls = [
+        # Filtre Année
+        html.Div(
+            [
+                html.Label(
+                    "Year",
+                    className="control-label",
+                    htmlFor="map-year-filter",
+                ),
+                dcc.Dropdown(
+                    id="map-year-filter",
+                    options=year_options,
+                    value=None,  # None = toutes les années
+                    placeholder="All years",
+                    clearable=True,
+                    persistence=True,
+                    persistence_type="session",
+                    className="control-input",
+                    disabled=not year_options,
+                ),
+            ],
+            className="control-group",
+        ),
+        # Filtre Mois
+        html.Div(
+            [
+                html.Label(
+                    "Month",
+                    className="control-label",
+                    htmlFor="map-month-filter",
+                ),
+                dcc.Dropdown(
+                    id="map-month-filter",
+                    options=month_options,
+                    value=None,  # None = tous les mois
+                    placeholder="All months",
+                    clearable=True,
+                    persistence=True,
+                    persistence_type="session",
+                    className="control-input",
+                ),
+            ],
+            className="control-group",
+        ),
+    ]
+
     return build_graph_section(
         "radiation-map",
         title="Geolocated monitoring stations",
         description=(
             "An interactive map highlighting radiation monitoring stations and associated weather observations."
         ),
+        controls=map_controls,
     )
 
 __all__ = ["build_layout"]
