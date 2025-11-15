@@ -240,26 +240,18 @@ def delete_files_in_directory(directory_path: str) -> None:
 
 def rename_columns(df: pd.DataFrame, old_names: List[str], new_names: List[str]) -> pd.DataFrame:
     """
-    Renames columns in a pandas DataFrame.
+    Renames specified columns in a pandas DataFrame.
 
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        The DataFrame whose columns are to be renamed.
-    old_names : List[str]
-        List of current column names to be renamed.
-    new_names : List[str]
-        List of new column names (must be the same length as `old_names`).
+    Args:
+        df (pd.DataFrame): The DataFrame whose columns are to be renamed.
+        old_names (List[str]): List of current column names to be renamed.
+        new_names (List[str]): List of new column names (must be the same length as `old_names`).
 
     Returns:
-    --------
-    pd.DataFrame
-        The DataFrame with renamed columns.
+        pd.DataFrame: The DataFrame with renamed columns.
 
     Raises:
-    -------
-    ValueError
-        If `old_names` and `new_names` have different lengths.
+        ValueError: If `old_names` and `new_names` have different lengths.
     """
     if len(old_names) != len(new_names):
         raise ValueError("`old_names` and `new_names` must have the same length.")
@@ -273,10 +265,37 @@ def rename_columns(df: pd.DataFrame, old_names: List[str], new_names: List[str])
     return df
 
 def delete_files_in_directory(directory_path: str) -> None:
-    import os
-    os.makedirs(directory_path, exist_ok=True)  # <--
+    """
+    Deletes all files in the specified directory.
+
+    Args:
+        directory_path (str): Path to the directory whose files will be deleted.
+
+    Returns:
+        None: This function does not return a value.
+    """
+    os.makedirs(directory_path, exist_ok=True)
     for item in os.listdir(directory_path):
         p = os.path.join(directory_path, item)
         if os.path.isfile(p):
             os.remove(p)
     print(f"All files in the directory '{directory_path}' have been deleted.")
+
+def remove_outliers(df: pd.DataFrame, column: str, threshold: float = 1000.0) -> pd.DataFrame:
+    """
+    Removes outliers from a DataFrame column using the IQR (Interquartile Range) method.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing the data.
+        column (str): Name of the column from which outliers will be removed.
+        threshold (float, optional): Threshold for outlier detection.
+
+    Returns:
+        pd.DataFrame: DataFrame with outliers removed from the specified column.
+    """
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - threshold * IQR
+    upper_bound = Q3 + threshold * IQR
+    return df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]

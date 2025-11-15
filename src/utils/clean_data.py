@@ -4,10 +4,34 @@ import pandas as pd
 import numpy as np
 import unidecode
 from sklearn.neighbors import BallTree
-from config import *
-from src.utils.utils import *
-from src.utils.db_utils import *
-from config import *
+from config import (
+    DATA_CLEANED_DIR,
+    DATA_RAW_DIR,
+    RADIATION_DATA_FILENAME_PATTERN,
+    RADIATION_DATA_CONFIG,
+    DATABASE_RAW_PATH,
+    RADIATION_TABLE_PREFIX,
+    RADIATION_CONCATENATED_TABLE_NAME,
+    MUNICIPALITY_DATA_FILENAME,
+    WEATHER_TABLE_NAME,
+    WEATHER_DATA_FILENAME,
+    USE_OF_A_DATABASE,
+    MUNICIPALITY_DATA_CONFIG,
+    WEATHER_DATA_CONFIG,
+    CLEANED_DATA_CONFIG,
+    CLEANED_DATA_FILENAME,
+)
+from src.utils.utils import (
+    delete_files_in_directory,
+    concatenate_csv_files,
+    remove_outliers,
+    merge_dataframes,
+    convert_lambert_to_wgs84
+)
+from src.utils.db_utils import (
+    get_db_connection,
+    concatenate_radiation_tables_in_db,
+)
 
 def clean_all_data() -> None:
     """
@@ -154,6 +178,11 @@ def clean_radiation_data(radiation_df: pd.DataFrame, config: Dict[str, Any]) -> 
     )
     radiation_df[config["municipality_name"]] = radiation_df[config["municipality_name"]].str.replace(r"^L'", "", regex=True)
 
+    # Remove outliers and null measurement values
+    radiation_df[config["radioactivity_values_column"]] = pd.to_numeric(radiation_df[config["radioactivity_values_column"]], errors="coerce")
+    radiation_df = radiation_df.dropna(subset=[config["radioactivity_values_column"]])
+    radiation_df = remove_outliers(radiation_df, config["radioactivity_values_column"])
+    
     # Select columns to keep
     radiation_df = radiation_df[config["required_columns"]]
 
@@ -401,6 +430,5 @@ def associate_weather_to_radiation(
 
     return result_df
 
-
-
-#clean
+if __name__ == "__main__":
+    clean_all_data()
