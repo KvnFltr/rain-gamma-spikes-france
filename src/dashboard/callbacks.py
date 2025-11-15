@@ -479,8 +479,9 @@ def register_all_callbacks(app: Dash) -> None:
         Output("rainfall-histogram", "figure"),
         Input("radiation-data-store", "data"),
         Input("medium-filter1", "value"),
+        Input("rainfall-threshold", "value"),
     )
-    def update_rainfall_histogram(payload: str | None, medium: str):
+    def update_rainfall_histogram(payload: str | None, medium: str, threshold: float):
         """Histogram comparing radioactivity distributions, filtered by medium."""
         
         df = deserialize_dataset(payload)
@@ -504,7 +505,7 @@ def register_all_callbacks(app: Dash) -> None:
             return px.histogram(title="No matching data to display")
 
         df["Rain category"] = df["Rainfall"].apply(
-            lambda x: "Dry day (<0.1 mm)" if x < 0.1 else "Rainy day (≥0.1 mm)"
+            lambda x: f"Dry day (<{threshold} mm)" if x < threshold else f"Rainy day (≥{threshold} mm)"
         )
 
         bins = [0, 0.0125, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2, 102.4, 204.8, 409.6, 1000]
@@ -516,10 +517,13 @@ def register_all_callbacks(app: Dash) -> None:
             df,
             x="Radio_bin",
             color="Rain category",
-            opacity=0.8,
+            color_discrete_map={
+                f"Dry day (<{threshold} mm)": "#ff4444", 
+                f"Rainy day (≥{threshold} mm)": "#38bdf8",
+            },
+            opacity=1,
             barmode='group',
             histnorm='percent',
-            category_orders={"Radio_bin": bin_labels},
             labels={
                 "Radio_bin": axis_label,
                 "Rain category": "Rain category"
