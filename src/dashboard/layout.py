@@ -12,7 +12,8 @@ from ..components import (
     build_metrics_row,
     build_stat_card,
     build_rainfall_histogram_section,
-    build_graph_section
+    build_graph_section,
+    build_daily_measurements_section
 )
 
 
@@ -26,9 +27,8 @@ def build_layout() -> html.Div:
     metrics = _build_metrics_section(dataset)
 
     map_section = _build_map_section()
-    time_series_section = _build_time_series_section()
     rainfall_hist_section = build_rainfall_histogram_section()
-
+    daily_measurements_section = build_daily_measurements_section()
     # Assemble the full layout
     return html.Div(
         className="home-page",
@@ -44,7 +44,7 @@ def build_layout() -> html.Div:
                     metrics,
                     rainfall_hist_section,
                     map_section,
-                    time_series_section,
+                    daily_measurements_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
                 ],
             ),
@@ -106,7 +106,7 @@ def _build_date_slider_config(dataset: pd.DataFrame | None) -> dict[str, Any] | 
         "marks": marks,
     }
 
-
+# Not used anymore
 def _build_histogram_controls(
     radionuclide_options: list[dict[str, str]],
     medium_options: list[dict[str, str]],
@@ -198,31 +198,6 @@ def _build_metrics_section(dataset: pd.DataFrame | None) -> html.Div:
         ]
     )
 
-
-def _build_histogram_section(
-    radionuclide_options: list[dict[str, str]],
-    medium_options: list[dict[str, str]],
-    slider_config: dict[str, Any] | None,
-) -> html.Div:
-    """Build the histogram section with controls."""
-    histogram_controls = _build_histogram_controls(
-        radionuclide_options,
-        medium_options,
-        slider_config,
-    )
-
-    return build_graph_section(
-        "radiation-histogram",
-        title="Gamma dose distribution",
-        description=(
-            "Explore how gamma dose results are distributed and compare collection media "
-            "or radionuclides using the interactive controls."
-        ),
-        controls=histogram_controls,
-        footer=html.Span("Unit: —", id="histogram-unit-legend", className="graph-section__legend-text"),
-    )
-
-
 def _build_map_section() -> html.Div:
     """Build the geographic map section."""
     return build_graph_section(
@@ -232,17 +207,5 @@ def _build_map_section() -> html.Div:
             "An interactive map highlighting radiation monitoring stations and associated weather observations."
         ),
     )
-
-
-def _build_time_series_section() -> html.Div:
-    """Build the time series section."""
-    return build_graph_section(
-        "rainfall-timeseries",
-        title="Precipitation and gamma dose dynamics",
-        description=(
-            "A combined time-series view to correlate rainfall intensity with gamma dose variations over time."
-        ),
-    )
-
 
 __all__ = ["build_layout"]

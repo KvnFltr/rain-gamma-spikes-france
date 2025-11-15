@@ -14,7 +14,7 @@ __all__ = [
     "build_header",
     "build_navbar",
     "build_metrics_row",
-    "build_stat_card",    
+    "build_stat_card",
     "build_daily_measurements_section",
     "build_rainfall_histogram_section",
     "build_graph_section"

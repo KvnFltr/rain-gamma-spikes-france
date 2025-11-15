@@ -1,4 +1,3 @@
-from dash import html
 from .sections import build_graph_section
 
 def build_daily_measurements_section():

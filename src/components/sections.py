@@ -1,9 +1,7 @@
 """Reusable layout sections for the dashboard."""
 
 from __future__ import annotations
-
 from typing import Iterable
-
 from dash import dcc, html
 from dash.development.base_component import Component
 
