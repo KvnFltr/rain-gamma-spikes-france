@@ -23,54 +23,6 @@ from .utils import (
     format_date, 
 )
 
-def _stat_card_children(title: str, value: str) -> list[Component]:
-    """Return the children used within a statistic card."""
-    return [
-        html.Span(title, className="stat-card__title"),
-        html.Strong(value, className="stat-card__value"),
-    ]
-
-
-def _empty_histogram_figure(message: str) -> go.Figure:
-    """Return a placeholder histogram figure with an informative message."""
-    fig = go.Figure()
-    fig.update_layout(
-        template="simple_white",
-        paper_bgcolor="rgba(0, 0, 0, 0)",
-        plot_bgcolor="rgba(0, 0, 0, 0)",
-        height=420,
-        margin=dict(l=20, r=20, t=40, b=60),
-        xaxis_title="Gamma dose result (Bq/kg or Bq/L)",
-        yaxis_title="Number of samples",
-        font=dict(color="#0f172a"),
-        showlegend=False,
-    )
-    fig.update_xaxes(gridcolor="#d7dde8")
-    fig.update_yaxes(gridcolor="#d7dde8")
-
-    fig.update_layout(
-        template="plotly_dark",
-        paper_bgcolor="rgba(13, 23, 44, 0.0)",
-        plot_bgcolor="rgba(13, 23, 44, 0.0)",
-        height=420,
-        margin=dict(l=20, r=20, t=40, b=60),
-        xaxis_title="Gamma dose result (Bq/kg or Bq/L)",
-        yaxis_title="Frequency",
-        font=dict(color="#f8fbff"),
-        showlegend=False,
-    )
-
-    fig.add_annotation(
-        text=message,
-        x=0.5,
-        y=0.5,
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        font=dict(size=16, color="#a0b4d0"),
-    )
-    return fig
-
 
 def register_all_callbacks(app: Dash) -> None:
     """Register all dashboard callbacks."""
@@ -270,18 +222,53 @@ def register_all_callbacks(app: Dash) -> None:
 
             
     @app.callback(
-        Output("rainfall-timeseries", "figure"),
+        Output("daily-measurements-graph", "figure"),
         Input("radiation-data-store", "data"),
     )
-    def update_timeseries(payload: str | None) -> go.Figure:
-        """Update the time series plot for rainfall and radiation."""
+    def update_daily_measurements_graph(payload: str | None):
+        """Plot the number of radiation measurements per day."""
+        
+        if payload is None:
+            return px.line(title="No data available")
+
         df = deserialize_dataset(payload)
 
-        if df.empty or RAINFALL_COLUMN not in df or DATE_COLUMN not in df:
-            return _empty_histogram_figure("No time series data available")
+        if df.empty or DATE_COLUMN not in df:
+            return px.line(title="No date data available")
 
-        # Créer la série temporelle
-        fig = px.line(df, x=DATE_COLUMN, y=[RAINFALL_COLUMN, RESULT_COLUMN])
+        df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN], errors="coerce")
+        df = df.dropna(subset=[DATE_COLUMN])
+
+        daily_counts = (
+            df.groupby(df[DATE_COLUMN].dt.date)
+            .size()
+            .reset_index(name="count")
+        )
+
+        daily_counts.rename(columns={DATE_COLUMN: "date"}, inplace=True)
+
+        fig = px.bar(
+            daily_counts,
+            x="date",
+            y="count",
+            title="Daily Measurements Count",
+        )
+        fig.update_traces(
+            selector=dict(type="bar"),
+            marker=dict(
+                color="#ffffff",         # blanc pur
+                line=dict(color="#ffffff", width=0.6),  # bord blanc fin pour lisibilité
+            ),
+            opacity=1.0,
+        )
+
+        fig.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="rgba(13, 23, 44, 0.0)",
+            plot_bgcolor="rgba(13, 23, 44, 0.0)",
+            margin=dict(l=20, r=20, t=50, b=60),
+            height=450
+        )
 
         return fig
     
@@ -329,7 +316,7 @@ def register_all_callbacks(app: Dash) -> None:
             x="Radio_bin",
             color="Rain category",
             color_discrete_map={
-                f"Dry day (<{threshold} mm)": "#ff4444", 
+                f"Dry day (<{threshold} mm)": "#e0f2fe", 
                 f"Rainy day (≥{threshold} mm)": "#38bdf8",
             },
             opacity=1,
@@ -352,6 +339,54 @@ def register_all_callbacks(app: Dash) -> None:
 
         return fig
 
+
+def _stat_card_children(title: str, value: str) -> list[Component]:
+    """Return the children used within a statistic card."""
+    return [
+        html.Span(title, className="stat-card__title"),
+        html.Strong(value, className="stat-card__value"),
+    ]
+
+
+def _empty_histogram_figure(message: str) -> go.Figure:
+    """Return a placeholder histogram figure with an informative message."""
+    fig = go.Figure()
+    fig.update_layout(
+        template="simple_white",
+        paper_bgcolor="rgba(0, 0, 0, 0)",
+        plot_bgcolor="rgba(0, 0, 0, 0)",
+        height=420,
+        margin=dict(l=20, r=20, t=40, b=60),
+        xaxis_title="Gamma dose result (Bq/kg or Bq/L)",
+        yaxis_title="Number of samples",
+        font=dict(color="#0f172a"),
+        showlegend=False,
+    )
+    fig.update_xaxes(gridcolor="#d7dde8")
+    fig.update_yaxes(gridcolor="#d7dde8")
+
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="rgba(13, 23, 44, 0.0)",
+        plot_bgcolor="rgba(13, 23, 44, 0.0)",
+        height=420,
+        margin=dict(l=20, r=20, t=40, b=60),
+        xaxis_title="Gamma dose result (Bq/kg or Bq/L)",
+        yaxis_title="Frequency",
+        font=dict(color="#f8fbff"),
+        showlegend=False,
+    )
+
+    fig.add_annotation(
+        text=message,
+        x=0.5,
+        y=0.5,
+        xref="paper",
+        yref="paper",
+        showarrow=False,
+        font=dict(size=16, color="#a0b4d0"),
+    )
+    return fig
 
 
 __all__ = ["register_all_callbacks"]
