@@ -14,6 +14,11 @@ from ..components import (
     build_rain_vs_radio_section,
     build_daily_measurements_section,
     build_rainfall_histogram_section,
+    build_rainfall_boxplot_section,
+    build_rainfall_scatter_section,
+    build_drywet_boxplot_section,
+
+
 )
 from config import RADION_COLUMN, MEDIUM_COLUMN, DATE_COLUMN
 
@@ -262,6 +267,9 @@ def build_layout() -> html.Div:
     
     daily_measurements_section = build_daily_measurements_section()
     rainfall_hist_section = build_rainfall_histogram_section()
+    rainfall_boxplot_section = build_rainfall_boxplot_section()
+    rainfall_scatter_section = build_rainfall_scatter_section()
+    drywet_boxplot_section = build_drywet_boxplot_section()
 
     # Assembler le layout complet
     return html.Div(
@@ -276,9 +284,13 @@ def build_layout() -> html.Div:
                 className="home-page__content",
                 children=[
                     metrics,
+                    map_section,
+                    
                     histogram_section,
                     rainfall_hist_section,
-                    map_section,
+                    drywet_boxplot_section,
+                    rainfall_boxplot_section,
+                    rainfall_scatter_section,
                     commune_corr_section,
                     commune_mean_section,
                     daily_measurements_section,
