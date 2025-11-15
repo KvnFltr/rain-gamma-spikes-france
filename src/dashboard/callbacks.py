@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dash import Input, Output, html
 import plotly.express as px
-from typing import Any, Iterable
+from typing import Iterable
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -11,21 +11,24 @@ from dash.development.base_component import Component
 
 
 from config import (
-    DATE_COLUMN, RESULT_COLUMN, UNIT_COLUMN,
-    RADION_COLUMN, MEDIUM_COLUMN, LAT_COLUMN,
-    LON_COLUMN, MUNICIPALITY_COLUMN, MEDIUM_COLOR_MAP
+    DATE_COLUMN, 
+    RESULT_COLUMN, 
+    UNIT_COLUMN,
+    RADION_COLUMN,
+    MEDIUM_COLUMN, 
+    LAT_COLUMN,
+    LON_COLUMN, 
+    MUNICIPALITY_COLUMN, 
+    RAINFALL_COLUMN
 )
 from .utils import (
     deserialize_dataset, 
     normalize_selection,
     format_integer, 
     format_date, 
-    compute_bin_count, 
     normalize_name,
     load_communes_geojson,
 )
-
-
 
 def _stat_card_children(title: str, value: str) -> list[Component]:
     """Return the children used within a statistic card."""
@@ -118,162 +121,6 @@ def register_all_callbacks(app: Dash) -> None:
             _stat_card_children("Latest measurement", format_date(latest_date)),
         )
 
-    @app.callback(
-        Output("radiation-histogram", "figure"),
-        Output("histogram-unit-legend", "children"),
-        Input("radionuclide-filter", "value"),
-        Input("medium-filter", "value"),
-        Input("date-range-slider", "value"),
-        Input("hist-scale", "value"),
-        Input("radiation-data-store", "data"),
-    )
-    def update_histogram(
-        selected_radionuclides: Iterable[str] | None,
-        selected_media: Iterable[str] | None,
-        slider_range: list[int] | None,
-        hist_scale: str,
-        payload: str | None,
-    ) -> tuple[go.Figure, Component]:
-        """Update the histogram based on filter selections."""
-        dataset = deserialize_dataset(payload)
-
-        if dataset.empty:
-            return _empty_histogram_figure("No radiation measurements are available yet."), html.Span(
-                "Unit: —", className="graph-section__legend-text"
-            )
-
-        filtered = dataset.copy()
-
-        radionuclide_filter = normalize_selection(selected_radionuclides)
-        medium_filter = normalize_selection(selected_media)
-
-        if radionuclide_filter:
-            filtered = filtered[filtered[RADION_COLUMN].isin(radionuclide_filter)]
-        if medium_filter:
-            filtered = filtered[filtered[MEDIUM_COLUMN].isin(medium_filter)]
-        if slider_range and len(slider_range) == 2:
-            start = pd.to_datetime(slider_range[0], unit="s")
-            end = pd.to_datetime(slider_range[1], unit="s")
-            filtered = filtered[filtered[DATE_COLUMN].between(start, end)]
-
-        if filtered.empty:
-            return _empty_histogram_figure("No data matches the current filters."), html.Span(
-                "Unit: —", className="graph-section__legend-text"
-            )
-
-        color_dimension: str | None = None
-        color_kwargs: dict[str, Any] = {}
-        if MEDIUM_COLUMN in filtered and filtered[MEDIUM_COLUMN].nunique() > 1:
-            color_dimension = MEDIUM_COLUMN
-            medium_values = filtered[MEDIUM_COLUMN].dropna().astype(str).unique().tolist()
-            fallback_palette = px.colors.qualitative.Set2
-            color_kwargs["color_discrete_map"] = {
-                value: MEDIUM_COLOR_MAP.get(value, fallback_palette[i % len(fallback_palette)])
-                for i, value in enumerate(medium_values)
-            }
-        elif RADION_COLUMN in filtered and filtered[RADION_COLUMN].nunique() > 1:
-            color_dimension = RADION_COLUMN
-            color_kwargs["color_discrete_sequence"] = px.colors.qualitative.Set2
-
-        bin_count = compute_bin_count(filtered[RESULT_COLUMN])
-
-        histogram = px.histogram(
-            filtered,
-            x=RESULT_COLUMN,
-            color=color_dimension,
-            nbins=bin_count,
-            opacity=0.85,
-            labels={
-                RESULT_COLUMN: "Gamma dose result (Bq/kg or Bq/L)",
-                MEDIUM_COLUMN: "Measurement environment",
-                RADION_COLUMN: "Radionuclide",
-            },
-            **color_kwargs,
-        )
-
-        histogram.update_traces(
-            marker_line_color="rgba(15, 23, 42, 0.15)",
-            marker_line_width=1,
-            hovertemplate="%{y} samples<br>Gamma dose: %{x:.2f}<extra></extra>",
-        )
-
-        if color_dimension is None:
-            histogram.update_traces(marker_color="#2563eb")
-
-        histogram.update_layout(
-            template="simple_white",
-            paper_bgcolor="rgba(0, 0, 0, 0)",
-            plot_bgcolor="rgba(0, 0, 0, 0)",
-            bargap=0.04,
-            bargroupgap=0.0,
-            barmode="overlay",
-            legend=dict(
-                title="" if not color_dimension else "",
-                bgcolor="rgba(255, 255, 255, 0.92)",
-                bordercolor="rgba(15, 23, 42, 0.08)",
-                borderwidth=1,
-            ),
-        )
-
-        histogram.update_traces(marker_line_width=0)
-        histogram.update_layout(
-            template="plotly_dark",
-            paper_bgcolor="rgba(13, 23, 44, 0.0)",
-            plot_bgcolor="rgba(13, 23, 44, 0.0)",
-            bargap=0.05,
-            legend=dict(
-                title="" if not color_dimension else "Legend",
-                bgcolor="rgba(15, 23, 42, 0.6)",
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                x=0,
-                xanchor="left",
-                font=dict(size=12),
-            ),
-            margin=dict(l=20, r=20, t=50, b=70),
-            height=420,
-            font=dict(color="#0f172a"),
-        )
-        histogram.update_xaxes(
-            title="Gamma dose result (Bq/kg or Bq/L)",
-            gridcolor="#d7dde8",
-            zeroline=False,
-        )
-        histogram.update_yaxes(
-            title="Number of samples",
-            gridcolor="#d7dde8",
-            zeroline=False,
-            margin=dict(l=20, r=20, t=40, b=60),
-            height=420,
-            font=dict(color="#f8fbff"),
-        )
-        histogram.update_xaxes(
-            title="Gamma dose result (Bq/kg or Bq/L)",
-            gridcolor="rgba(148, 163, 184, 0.25)",
-            zerolinecolor="rgba(148, 163, 184, 0.35)",
-        )
-        histogram.update_yaxes(
-            title="Frequency",
-            gridcolor="rgba(148, 163, 184, 0.2)",
-            zerolinecolor="rgba(148, 163, 184, 0.35)",
-        )
-
-        units = []
-        if UNIT_COLUMN in filtered:
-            units = (
-                pd.Series(filtered[UNIT_COLUMN].dropna().unique())
-                .astype(str)
-                .sort_values()
-                .tolist()
-            )
-
-        if units:
-            legend_text = f"Unit{'s' if len(units) > 1 else ''}: {', '.join(units)}"
-        else:
-            legend_text = "Unit: Not specified"
-
-        return histogram, html.Span(legend_text, className="graph-section__legend-text")
 
     @app.callback(
         Output("commune-corr-map", "figure"),
@@ -298,7 +145,7 @@ def register_all_callbacks(app: Dash) -> None:
             msg = "No commune/rain/dose data to compute the choropleths."
             return _empty_histogram_figure(msg), _empty_histogram_figure(msg)
 
-        # Copie et filtres (même logique que l'histogramme)
+        # Copie et filtres
         f = df.copy()
         if selected_radionuclides:
             f = f[f[RADION_COLUMN].isin(normalize_selection(selected_radionuclides))]
@@ -391,43 +238,6 @@ def register_all_callbacks(app: Dash) -> None:
 
         return corr_fig, mean_fig
 
-    @app.callback(
-        Output("rain-vs-radio", "figure"),
-        Input("radiation-data-store", "data"),
-    )
-    def update_rain_radio_scatter(payload: str | None) -> go.Figure:
-        """Update the rainfall vs radioactivity scatter plot."""
-        df = deserialize_dataset(payload)
-
-        # Filtrer unité Bq/kg sec
-        df = df[df[UNIT_COLUMN] == "becquerel par kg sec"]
-
-        # Filtrer présence colonnes
-        if df.empty or "Rainfall" not in df or RESULT_COLUMN not in df:
-            return px.scatter(title="Rainfall vs Radioactivity — no data available")
-
-        # Convertir
-        df["Rainfall"] = pd.to_numeric(df["Rainfall"], errors="coerce")
-        df = df.dropna(subset=["Rainfall", RESULT_COLUMN])
-
-        fig = px.scatter(
-            df,
-            x="Rainfall",
-            y=RESULT_COLUMN,
-            labels={"Rainfall": "Rainfall (mm)", RESULT_COLUMN: "Radioactivity (Bq/kg sec)"},
-            trendline="ols",
-            opacity=0.8,
-            title="Rainfall vs Radioactivity (Bq/kg sec)",
-        )
-
-        fig.update_layout(
-            template="simple_white",
-            paper_bgcolor="rgba(0, 0, 0, 0)",
-            plot_bgcolor="rgba(0, 0, 0, 0)",
-            height=420,
-        )
-
-        return fig
 
     @app.callback(
         Output("radiation-map", "figure"),
@@ -466,11 +276,11 @@ def register_all_callbacks(app: Dash) -> None:
         """Update the time series plot for rainfall and radiation."""
         df = deserialize_dataset(payload)
 
-        if df.empty or "Rainfall" not in df or DATE_COLUMN not in df:
+        if df.empty or RAINFALL_COLUMN not in df or DATE_COLUMN not in df:
             return _empty_histogram_figure("No time series data available")
 
         # Créer la série temporelle
-        fig = px.line(df, x=DATE_COLUMN, y=["Rainfall", RESULT_COLUMN])
+        fig = px.line(df, x=DATE_COLUMN, y=[RAINFALL_COLUMN, RESULT_COLUMN])
 
         return fig
     
@@ -486,7 +296,7 @@ def register_all_callbacks(app: Dash) -> None:
         
         df = deserialize_dataset(payload)
         
-        needed = {RESULT_COLUMN, UNIT_COLUMN, "Rainfall"}
+        needed = {RESULT_COLUMN, UNIT_COLUMN, RAINFALL_COLUMN}
         if df.empty or not needed.issubset(df.columns):
             return px.histogram(title="No data available")
        
@@ -498,13 +308,13 @@ def register_all_callbacks(app: Dash) -> None:
             axis_label = "Radioactivity (Bq/kg dry)"
 
         df[RESULT_COLUMN] = pd.to_numeric(df[RESULT_COLUMN], errors="coerce")
-        df["Rainfall"] = pd.to_numeric(df["Rainfall"], errors="coerce")
-        df = df.dropna(subset=[RESULT_COLUMN, "Rainfall"])
+        df[RAINFALL_COLUMN] = pd.to_numeric(df[RAINFALL_COLUMN], errors="coerce")
+        df = df.dropna(subset=[RESULT_COLUMN, RAINFALL_COLUMN])
 
         if df.empty:
             return px.histogram(title="No matching data to display")
 
-        df["Rain category"] = df["Rainfall"].apply(
+        df["Rain category"] = df[RAINFALL_COLUMN].apply(
             lambda x: f"Dry day (<{threshold} mm)" if x < threshold else f"Rainy day (≥{threshold} mm)"
         )
 

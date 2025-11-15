@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import json
 from typing import Iterable
+from io import StringIO
 from functools import lru_cache
 from config import DATE_COLUMN, RESULT_COLUMN, MEDIUM_COLUMN, DATA_PATH, GEOJSON_PATH, MEDIUM_LABELS
 
@@ -84,7 +85,7 @@ def deserialize_dataset(payload: str | None) -> pd.DataFrame:
 
     if not payload:
         return pd.DataFrame()
-    dataframe = pd.read_json(payload, orient="records")
+    dataframe = pd.read_json(StringIO(payload), orient="records")
     if DATE_COLUMN in dataframe:
         dataframe[DATE_COLUMN] = pd.to_datetime(dataframe[DATE_COLUMN], errors="coerce")
         dataframe = dataframe.dropna(subset=[DATE_COLUMN])
