@@ -478,7 +478,7 @@ def register_all_callbacks(app: Dash) -> None:
     @app.callback(
         Output("rainfall-histogram", "figure"),
         Input("radiation-data-store", "data"),
-        Input("medium-filter", "value"),
+        Input("medium-filter1", "value"),
     )
     def update_rainfall_histogram(payload: str | None, medium: str):
         """Histogram comparing radioactivity distributions, filtered by medium."""
@@ -491,8 +491,10 @@ def register_all_callbacks(app: Dash) -> None:
        
         if medium == "water":
             df = df[df[UNIT_COLUMN] == "becquerel par litre"]
+            axis_label = "Radioactivity (Bq/L)"
         elif medium == "soil":
             df = df[df[UNIT_COLUMN] == "becquerel par kg sec"]
+            axis_label = "Radioactivity (Bq/kg dry)"
 
         df[RESULT_COLUMN] = pd.to_numeric(df[RESULT_COLUMN], errors="coerce")
         df["Rainfall"] = pd.to_numeric(df["Rainfall"], errors="coerce")
@@ -516,10 +518,10 @@ def register_all_callbacks(app: Dash) -> None:
             color="Rain category",
             opacity=0.8,
             barmode='group',
-            histnorm='probability',
+            histnorm='percent',
             category_orders={"Radio_bin": bin_labels},
             labels={
-                "Radio_bin": "Radioactivity (Bq/L)",
+                "Radio_bin": axis_label,
                 "Rain category": "Rain category"
             },
             title="Radioactivity Distribution on Dry vs Rainy Days"

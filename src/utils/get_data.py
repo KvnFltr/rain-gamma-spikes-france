@@ -1,5 +1,7 @@
 import os
 from typing import Dict, Any
+from pathlib import Path
+import requests
 from playwright.sync_api import sync_playwright
 from config import (
     DATA_RAW_DIR,
@@ -16,6 +18,8 @@ from config import (
     MUNICIPALITY_DATA_FILENAME,
     MUNICIPALITY_TABLE_NAME,
     USE_OF_A_DATABASE,
+    GEOJSON_PATH,
+    GEO_URL,
     get_radiation_data_filename
 
 )
@@ -76,33 +80,11 @@ def get_all_data() -> None:
         db_path=DATABASE_RAW_PATH,
         table_name=MUNICIPALITY_TABLE_NAME
     )
-    get_communes_geojson()
 
-def get_communes_geojson():
-    """
-    Télécharge un GeoJSON (et non un TopoJSON) des communes de France
-    et l'enregistre dans data/geodata/communes.geojson.
-
-    Source: API officielle geo.api.gouv.fr (FeatureCollection GeoJSON)
-    -> properties contient au moins: nom, code
-    """
-    import requests
-    from pathlib import Path
-
-    GEO_DIR = Path("data/geodata")
-    GEO_PATH = GEO_DIR / "communes.geojson"
-    GEO_URL = "https://www.data.gouv.fr/api/1/datasets/r/00c0c560-3ad1-4a62-9a29-c34c98c3701e"
-
-    GEO_DIR.mkdir(parents=True, exist_ok=True)
-
-    print(f"Téléchargement du GeoJSON des communes : {GEO_URL}")
-    with requests.get(GEO_URL, stream=True, timeout=180) as r:
-        r.raise_for_status()
-        with open(GEO_PATH, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1 << 15):
-                if chunk:
-                    f.write(chunk)
-    print(f"✓ Fichier GeoJSON enregistré dans {GEO_PATH}")
+    get_municipality_geojson(
+        geo_url=GEO_URL,
+        geojson_path=GEOJSON_PATH
+    )
 
 
 def get_radiation_data(
@@ -265,6 +247,41 @@ def get_municipality_data(
             table_name=table_name,
             sep=","
         )
+
+def get_municipality_geojson(geo_url: str, geojson_path: Path):
+    """
+    Downloads a GeoJSON (not TopoJSON) of French municipalities
+    and saves it to the specified path.
+    Source: Official API geo.api.gouv.fr (FeatureCollection GeoJSON)
+    -> properties include at least: name, code
+
+    Args:
+        geo_url (str): URL to download the GeoJSON from.
+        geojson_path (Path): Full path (including directory and filename) where the GeoJSON file will be saved.
+
+    Return:
+        None: The function saves the GeoJSON file to disk.
+
+    Raises:
+        requests.exceptions.HTTPError: If the HTTP request fails.
+        requests.exceptions.RequestException: For connection-related errors.
+        IOError: If writing the file fails.
+    """
+
+    # Create the directory if it doesn't exist
+    geojson_path.parent.mkdir(parents=True, exist_ok=True)
+
+    print(f"Downloading GeoJSON of municipalities: {geo_url}")
+
+    with requests.get(geo_url, stream=True, timeout=180) as r:
+        r.raise_for_status()
+        with open(geojson_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1 << 15):
+                if chunk:
+                    f.write(chunk)
+
+    print(f"✓ GeoJSON file saved to {geojson_path}")
+
 
 if __name__ == "__main__":
     get_all_data()

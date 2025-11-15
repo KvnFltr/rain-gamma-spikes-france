@@ -200,11 +200,15 @@ CLEANED_DATA_CONFIG: Dict[str, Dict[str, str]] = {
 }
 
 
+# Geo data config
+GEO_DIR = Path("data/geodata")
+GEO_PATH = GEO_DIR / "communes.geojson"
+GEO_URL = "https://www.data.gouv.fr/api/1/datasets/r/00c0c560-3ad1-4a62-9a29-c34c98c3701e"
+GEOJSON_PATH = Path("data/geodata/communes.geojson")
+
 ### For dashboard :
 
 DATA_PATH = Path("data/cleaned/data.csv")
-GEOJSON_PATH = Path("data/geodata/communes.geojson")
-
 DATE_COLUMN = "Date start sampling radioactivity"
 RESULT_COLUMN = "Result radioactivity"
 UNIT_COLUMN = "Unit radioactivity"
