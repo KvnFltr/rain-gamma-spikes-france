@@ -85,7 +85,7 @@ flowchart TD
 4. **Register callbacks**: implement the interaction logic in `src/dashboard/callbacks.py`, using `deserialize_dataset()` from `src/dashboard/utils.py` to access the cached dataframe.
 5. **Test**: run `python main.py dashboard --debug` and validate the new controls/graphs locally before deploying.
 
-## Rapport d'analyse
+## Analysis Report
 - The cleaned dataset contains 171,545 measurements collected between 2020-01-01 and 2025-01-01 across 395 municipalities, with soil samples representing 24% of the records (41,110 rows) and water samples 76% (130,435 rows).
 - Heavy rain events remain relatively rare (14% of observations record ≥5 mm of precipitation) yet coincide with a slightly higher median gamma result: 1.1 Bq versus 0.94 Bq for drier periods, suggesting rain is associated with moderate spikes rather than extreme outliers.
 - Soil samples show a higher median dose (1.4 Bq/kg dry) than water samples (0.52 Bq/L), confirming that terrestrial media retain more radionuclides after precipitation.
