@@ -93,7 +93,6 @@ def build_stat_card(title: str, value: str, *, identifier: str) -> html.Div:
     )
 
 
-## New function added to filter
 def build_filter_bar(stations: list[str], variables: list[str]) -> html.Div:
     """Build a reusable filter bar with dropdowns."""
     return html.Div(

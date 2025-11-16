@@ -21,6 +21,7 @@ def build_rainfall_scatter_section():
             ],
             className="control-group",
         ),
+
         html.Div(
             [
                 html.Label("Y scale", className="control-label", htmlFor="scatter-y-scale"),
@@ -35,27 +36,12 @@ def build_rainfall_scatter_section():
             ],
             className="control-group",
         ),
-        html.Div(
-            [
-                html.Label("Trendline", className="control-label", htmlFor="scatter-trendline"),
-                dcc.RadioItems(
-                    id="scatter-trendline",
-                    options=[{"label": "None", "value": "none"}, {"label": "LOWESS", "value": "lowess"}, {"label": "OLS", "value": "ols"}],
-                    value="lowess",
-                    inline=True,
-                    inputClassName="control-radio-input",
-                    labelClassName="control-radio-label",
-                ),
-            ],
-            className="control-group",
-        ),
+        
     ]
 
     return build_graph_section(
         graph_id="rainfall-scatter",
         title="Rainfall vs. radioactivity",
-        description="Scatter of daily rainfall (mm) vs radioactivity result, with optional trendline.",
+        description="Scatter of daily rainfall (mm) vs radioactivity result.",
         controls=controls,
     )
-
-__all__ = ["build_rainfall_scatter_section"]

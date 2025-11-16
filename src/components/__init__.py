@@ -1,14 +1,10 @@
 """Reusable UI components for the dashboard."""
 
-from .component1 import build_metrics_row, build_stat_card
-from .component2 import build_graph_section
+from .sections import build_graph_section, build_metrics_row, build_stat_card
 from .daily_measurements_section import build_daily_measurements_section
 from .rainfall_histogram_section import build_rainfall_histogram_section
 from .rainfall_boxplot_section import build_rainfall_boxplot_section 
 from .rainfall_scatter_section import build_rainfall_scatter_section
-from .drywet_boxplot_section import build_drywet_boxplot_section
-
-
 
 from .footer import build_footer
 from .header import build_header
@@ -22,8 +18,7 @@ __all__ = [
     "build_stat_card",
     "build_daily_measurements_section",
     "build_rainfall_histogram_section",
-    "build_graph_section"
     "build_rainfall_boxplot_section",
-    "build_drywet_boxplot_section",
     "build_rainfall_scatter_section",
+    "build_graph_section",
 ]

@@ -185,3 +185,12 @@ body{ display: flex; justify-content: center; }
 
 /* Animations */
 @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px); } to{ opacity:1; transform:none; } }
+
+/* Forcer couleur blanche des valeurs sélectionnées dans les Dropdown */
+
+.control-input .Select-value-label {
+    color: var(--text-color) !important;  /* blanc clair */
+}
+.control-input .Select-value {
+    color: var(--text-color) !important;
+}

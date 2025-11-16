@@ -49,9 +49,9 @@ def build_layout() -> html.Div:
                 children=[
                     metrics,
                     rainfall_hist_section,
+                    rainfall_scatter_section,
                     map_section,
                     rainfall_boxplot_section,
-                    rainfall_scatter_section,
                     daily_measurements_section,
                     dcc.Store(id="radiation-data-store", data=store_payload, storage_type="memory"),
                 ],
